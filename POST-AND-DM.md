@@ -31,8 +31,10 @@ action on someone else's account, so I will not touch it until you say so.
 > Two thirds of them are pooled investment funds rather than startups. Of the
 > 484 that are operating companies, they name 1,504 distinct people and 97.61%
 > of those appear on exactly one company. 36 people appear on two or more. So the
-> whole vouching graph is 36 nodes and 44 edges, with no investors in it at all,
-> because investors are not who Form D names.
+> graph has 1,988 nodes and 1,548 edges, and 1,504 of those edges are the single
+> connection each person has. The other 44, from 36 people, are the only places
+> where anything connects. No investors, because investors are not who Form D
+> names.
 >
 > The names that do recur are administrative, and the filings say so themselves:
 > the top nine describe themselves as an agent of the general partner, the
@@ -71,8 +73,9 @@ action on someone else's account, so I will not touch it until you say so.
 >
 > I pulled 1,500 of the 15,282 made in Q3 2026. Two thirds are funds, not
 > startups. Of the 484 that are companies, they name 1,504 people and 97.61% of
-> them appear on exactly one company. The whole vouching graph is 36 nodes, 44
-> edges, no investors.
+> them appear on exactly one company. The graph is 1,988 nodes and 1,548 edges,
+> and only 44 of those edges connect anything beyond one person to one company.
+> No investors.
 >
 > The names that recur are filing agents. The one field that counts backers asks
 > for a number and no names.
@@ -121,6 +124,9 @@ action on someone else's account, so I will not touch it until you say so.
   specific next step. He said he would at minimum respond.
 - Every number in both drafts is read off the receipts table, which
   `scripts/verify.py` recomputes from the raw crawl with a second implementation
-  that shares no code. Re-run that script if the crawl changes.
+  that shares no code. It now runs 37 checks. Re-run it if the crawl changes.
+- Twelve filings were re-fetched from EDGAR and compared field by field against
+  what the page stores, including the full list of related persons. All twelve
+  agreed.
 - Item 6 is being rewritten, so the model paragraph in both drafts will need a
   matching pass before anything is sent.

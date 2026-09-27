@@ -421,6 +421,20 @@ def main():
     by_state = Counter(i["s"] or "--" for i in out_issuers)
     by_state_co = Counter(i["s"] or "--" for i in cos)
     by_month = Counter(i["f"][:6] for i in out_issuers)
+    US = {
+        "DELAWARE", "CALIFORNIA", "TEXAS", "NEW YORK", "NEVADA", "COLORADO",
+        "OHIO", "FLORIDA", "MASSACHUSETTS", "ILLINOIS", "WASHINGTON", "GEORGIA",
+        "VIRGINIA", "MARYLAND", "UTAH", "ARIZONA", "OREGON", "PENNSYLVANIA",
+        "NEW JERSEY", "NORTH CAROLINA", "MINNESOTA", "MISSOURI", "TENNESSEE",
+        "WISCONSIN", "INDIANA", "MICHIGAN", "CONNECTICUT", "ALABAMA", "LOUISIANA",
+        "KENTUCKY", "OKLAHOMA", "SOUTH CAROLINA", "KANSAS", "IOWA", "ARKANSAS",
+        "IDAHO", "MONTANA", "NEBRASKA", "NEW MEXICO", "HAWAII", "ALASKA",
+        "RHODE ISLAND", "VERMONT", "WYOMING", "MAINE", "NEW HAMPSHIRE",
+        "MISSISSIPPI", "WEST VIRGINIA", "NORTH DAKOTA", "SOUTH DAKOTA",
+        "DISTRICT OF COLUMBIA", "PUERTO RICO", "GUAM", "VIRGIN ISLANDS",
+    }
+    non_us = Counter(c["juris"] for c in issuers.values()
+                     if c["juris"] and c["juris"].upper() not in US)
 
     stats = {
         "window": f"{WINDOW[0]}-{WINDOW[1]}",
@@ -433,6 +447,10 @@ def main():
         "sampleRate": pct(len(recs), pop["filings"]) if pop["filings"] else None,
         "issuers": len(out_issuers),
         "amendments": sum(1 for r in recs if r["form"] == "D/A"),
+        "amendOrigInSample": sum(1 for r in recs
+                                 if r["form"] == "D/A" and r["prevAcc"]
+                                 and r["prevAcc"] in {x["acc"] for x in recs}),
+        "multiFilingIssuers": sum(1 for v in issuers.values() if v["amends"] > 0),
         "days": len({i["f"] for i in out_issuers}),
         "funds": len(funds),
         "fundPct": pct(len(funds), len(out_issuers)),
@@ -454,6 +472,10 @@ def main():
         "repeatInd": repeat_industries(idx_cos,
                                       {c["name"]: (c["ind"] or "unclassified")
                                        for c in issuers.values()}),
+        "nonUs": non_us.most_common(6),
+        "nonUsTotal": sum(non_us.values()),
+        "amendOrigInSample": 0,
+        "mergedIssuers": sum(1 for v in issuers.values() if v["amends"] > 0),
         "rule506c": sum(1 for i in out_issuers if i["6"]),
         "rule506cCo": sum(1 for i in cos if i["6"]),
         "investors": {"all": inv_all, "co": inv_cos},

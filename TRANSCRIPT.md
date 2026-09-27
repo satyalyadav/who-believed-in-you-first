@@ -269,7 +269,85 @@ The sensitivity sweep that did it:
 
 ---
 
-## 9. Design, in one pass
+## 9. A second audit, because the first one only checked itself
+
+The first verification pass recomputed the numbers from the crawl with a second
+implementation, which catches implementation bugs but not shared assumptions.
+This round checked the assumptions themselves, and three of them were wrong.
+
+**Ground truth.** Twelve filings were re-fetched from EDGAR and compared field by
+field against what the page stores: entity name, industry group, amount sold, the
+investor count, and the full list of related persons. Twelve of twelve agreed.
+The pipeline had never been tested against its source before, only against
+itself.
+
+**Two factual claims were flatly contradicted by the data sitting underneath
+them.** The page said Form D "misses Rule 504 offerings", and there are eight
+Rule 504 filings in the sample. It said Form D "misses every non-US issuer", and
+there are 219, led by 131 Cayman companies and 28 from Luxembourg, because a
+foreign vehicle selling into the United States files a Form D like anyone else.
+Both sentences were in a paragraph whose whole job was to be precise about
+coverage.
+
+**The graph was described in the wrong units.** The page said "the entire
+recorded social graph is 36 nodes and 44 edges." Those are the repeaters. The
+graph is 1,988 nodes and 1,548 edges, of which 1,504 are the single connection
+each person has and 44 are the only edges that connect anything. The finding is
+unchanged and now stated correctly.
+
+**The amendment arithmetic did not mean what it said.** The receipts read "1,487,
+after folding 546 amendments onto the filing they amend." There are 546
+amendments, but zero of them amend another filing inside the sample, so nothing
+was folded. The 1,500 filings collapse to 1,487 because 13 issuers happened to
+file twice inside the window. The number was right and the explanation was wrong,
+which is the worse of the two failures.
+
+**One model claim was false.** The page told the reader to "change who starts
+with reach, which nobody argues about at all, and watch that it decides
+everything." Measured across the full range of that slider, capture moves from
+2.93x to 3.01x. It is the least influential knob on the panel, by an order of
+magnitude. Measured ranking of everything on the panel:
+
+| dial | capture range | effect |
+| --- | --- | --- |
+| day-one cohort, 2% to 60% | 14.11x to 1.48x | −90% |
+| discovery share, 0.02 to 1.00 | 3.82x to 0.99x | −74% |
+| visibility threshold, 1 to 12 | 2.26x to 3.82x | +69% |
+| endorsements per round | 3.82x to 1.99x | −48% |
+| reputation weight, 0 to 0.98 | 3.72x to 2.84x | −24% |
+| noise, 0 to 1 | 3.41x to 2.63x | −23% |
+| network size, 500 to 6000 | 3.34x to 3.03x | −9% |
+| early endorsers amplified | 2.93x to 3.01x | +3% |
+
+The paragraph now reports the extremes it measures at both ends of three of those
+sliders, on every redraw, so it cannot drift from the model again.
+
+## 10. Making the slider live
+
+The complaint was that the graph sat still while the slider moved and only
+updated on release. It did not, quite: it was updating about seven times a
+second. But each update needed four full simulations, so the curve lagged the
+thumb badly enough to read as static.
+
+Three changes. The curve now streams back from the worker in batches as it is
+computed, so it draws itself instead of appearing whole, and the head of the line
+is marked so a run in flight is visibly in flight. The three comparison runs are
+skipped while a drag is in progress and only requested once the pointer is
+released, which takes a redraw from about 250ms of work to about 30ms. And small
+runs were rejected as a preview tier: at 250 agents the curve is four times
+faster and visibly different from the real one, which would be dishonest to draw.
+
+The measurement is honest this time. My first attempt at it reported that the
+slider never updated at all, because I was driving the mouse at y=9024 in a
+1000-pixel viewport. It was dragging nothing. Worth writing down: a test that
+reports zero has to be checked before its result is believed.
+
+Result: 51 canvas redraws across a two-second drag, 27 per second, worst frame
+gap 18ms, first repaint 20ms after the knob moves, and the comparison numbers
+landing about a fifth of a second after release. That is a live instrument rather
+than a screenshot of one.
+
+## 11. Design, in one pass
 
 The subject is a regulatory form, so the page is a regulatory form. Cold paper
 rather than cream, one mono family for everything structural and a high-contrast
@@ -289,7 +367,7 @@ histogram of degrees says it in one bar.
 
 ---
 
-## 10. Verification
+## 12. Verification
 
 Layout was checked in a real browser rather than by eye. The preview tool's
 screenshot path was broken in this environment, so a local Chromium was
@@ -323,23 +401,27 @@ and the 400 table rows now use `content-visibility`. Page load went from 687ms t
 308ms to DOMContentLoaded.
 
 Final numbers, all computed in `build_drop.py`, independently recomputed by
-`scripts/verify.py`, and printed in the receipts table so the page cannot
-disagree with the crawl:
+`scripts/verify.py` across 37 checks, and printed in the receipts table so the
+page cannot disagree with the crawl:
 
 ```
-sample: 1,500 of 15,282 filings in the quarter
-issuers: 1,487 after folding 546 amendments
+sample: 1,500 of 15,282 filings in the quarter, seed 20260926
+issuers: 1,487 distinct CIKs, 13 of which filed twice
+amendments: 546, none amending another filing in the sample
 funds: 1,003 (67.45%)      operating companies: 484 (32.55%)
+non-US issuers present: 219 (131 Cayman, 28 Luxembourg)
 names on operating companies: 1,504 distinct, 1,548 appearances
-  97.61% appear once, 36 repeaters adding 44 edges
+  97.61% appear once, 36 repeaters contributing the only 44 connecting edges
+graph: 1,988 nodes, 1,548 edges
 filings naming no human being: 196 of 1,500
-backer counts: 404 of 484 operating companies report at least one, none blank
+backer counts: 404 of 484 report at least one, none blank
   median 7 backers, median implied cheque $206,250, Gini 0.903
+Rule 504 filings present: 8 (so Rule 504 is not an exclusion)
 ```
 
 ---
 
-## 11. What I would do next
+## 13. What I would do next
 
 The 484 operating-company filings are one quarter of one exemption. The same
 code against Reg A and Reg CF, and against the 13D/G and Form ADV records where

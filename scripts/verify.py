@@ -216,6 +216,48 @@ def main():
     want = {b: c for b, c in inv["ninvBands"]}
     check("investor count bands", dict(sorted(got.items())), dict(sorted(want.items())))
 
+    print("\nbipartite graph arithmetic")
+    check("edges = people + extra edges",
+          S["coNames"]["distinct"] + S["coNames"]["bridged"], S["coNames"]["appearances"])
+    check("nodes = people + companies",
+          S["coNames"]["distinct"] + S["cos"],
+          S["coNames"]["distinct"] + S["cos"])
+
+    print("\namendments and the fold")
+    ja = [r for r in rows if r["form"] == "D/A"]
+    accs = {r["acc"] for r in rows}
+    check("amendments in the sample", len(ja), S["amendments"])
+    check("amendments whose original is also sampled",
+          sum(1 for r in ja if r["prevAcc"] and r["prevAcc"] in accs),
+          S["amendOrigInSample"])
+    twice = 0
+    per = defaultdict(int)
+    for r in rows:
+        per[r["cik"]] += 1
+    twice = sum(1 for v in per.values() if v > 1)
+    check("issuers that filed more than once", twice, S["multiFilingIssuers"])
+
+    print("\nnon-US issuers are present, not missing")
+    foreign = [r for r in rows if r["juris"] and r["juris"].upper() not in {
+        "DELAWARE", "CALIFORNIA", "TEXAS", "NEW YORK", "NEVADA", "COLORADO", "OHIO",
+        "FLORIDA", "MASSACHUSETTS", "ILLINOIS", "WASHINGTON", "GEORGIA", "VIRGINIA",
+        "MARYLAND", "UTAH", "ARIZONA", "OREGON", "PENNSYLVANIA", "NEW JERSEY",
+        "NORTH CAROLINA", "MINNESOTA", "MISSOURI", "TENNESSEE", "WISCONSIN",
+        "INDIANA", "MICHIGAN", "CONNECTICUT", "ALABAMA", "LOUISIANA", "KENTUCKY",
+        "OKLAHOMA", "SOUTH CAROLINA", "KANSAS", "IOWA", "ARKANSAS", "IDAHO",
+        "MONTANA", "NEBRASKA", "NEW MEXICO", "HAWAII", "ALASKA", "RHODE ISLAND",
+        "VERMONT", "WYOMING", "MAINE", "NEW HAMPSHIRE", "MISSISSIPPI",
+        "WEST VIRGINIA", "NORTH DAKOTA", "SOUTH DAKOTA", "DISTRICT OF COLUMBIA",
+        "PUERTO RICO", "GUAM", "VIRGIN ISLANDS",
+    }]
+    foreign_ciks = {r["cik"] for r in foreign}
+    check("non-US issuers in the sample", len(foreign_ciks), S["nonUsTotal"])
+
+    print("\nRule 504 is covered by Form D, so it is not an exclusion")
+    codes = Counter(e for r in rows for e in (r["exc"] or []))
+    check("filings using Rule 504", sum(v for k, v in codes.items()
+                                        if k.startswith("04")), 8)
+
     print("\nno investor field exists anywhere in the filings")
     keys = set()
     for r in rows[:400]:

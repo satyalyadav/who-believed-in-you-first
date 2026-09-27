@@ -8,9 +8,10 @@ people who believe in them," built from "attributable context from people who
 have worked together." The United States has been publishing its own version of
 that record, in Form D, and it turns out to be mostly empty. Across 484
 operating-company filings, 1,504 distinct people are named and 97.61% of them
-appear on exactly one company. The whole recorded graph of who stood behind
-American startups in a quarter is 36 nodes and 44 edges, and not one investor is
-in it.
+appear on exactly one company. The graph has 1,988 nodes and 1,548 edges, and
+1,504 of those edges are the single connection each person has. The other 44,
+contributed by 36 people, are the only places in the whole graph where anything
+connects, and not one investor is among them.
 
 ## Run it
 
@@ -63,7 +64,11 @@ is the number quoted throughout the page.
 | Operating companies | 484 (32.55%) |
 | Distinct people named on operating-company filings | 1,504 |
 | Of those, appearing on exactly one company | 97.61% |
-| People appearing on two or more | 36, adding 44 edges |
+| People appearing on two or more | 36, contributing the only 44 edges that connect anything |
+| Graph, operating companies only | 1,988 nodes, 1,548 edges |
+| Amendments | 546, none of which amends another filing in the sample |
+| Issuers that filed twice | 13 |
+| Non-US issuers present | 219 |
 | Filings that name no human being | 196 of 1,500 |
 | Operating-company filings reporting at least one backer | 404 of 484, none blank |
 | Median implied cheque, sold divided by backers | $206,250 |
