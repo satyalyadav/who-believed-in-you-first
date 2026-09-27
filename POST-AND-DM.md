@@ -8,7 +8,8 @@ action on someone else's account, so I will not touch it until you say so.
 - Live: https://satyalyadav.github.io/who-believed-in-you-first/
 - Git: https://github.com/satyalyadav/who-believed-in-you-first
 - Transcript in the repo: `TRANSCRIPT.md`
-- Also live: https://satyalyadav.github.io/who-believed-in-you-first/TRANSCRIPT.md
+- Transcript, rendered: https://github.com/satyalyadav/who-believed-in-you-first/blob/master/TRANSCRIPT.md
+- Transcript, raw: https://raw.githubusercontent.com/satyalyadav/who-believed-in-you-first/master/TRANSCRIPT.md
 
 ## Post, for LinkedIn
 
