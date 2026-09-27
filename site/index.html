@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Who believed in you first?</title>
+<meta name="description" content="Cosign launched on 25 September promising a public record of who backed whom. The US record of who backs whom already exists, and it is filed every day. Here is what is in it.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="chrome mono">
+  <span><b>Who believed in you first</b></span>
+  <span class="sp"></span>
+  <span class="idx" id="chrome-idx">item 1 of 7</span>
+  <span class="sp"></span>
+  <span class="idx" id="chrome-stat">EDGAR Form D, Q3 2026</span>
+</div>
+
+<div class="wrap">
+
+  <nav class="rail" aria-label="Sections">
+    <ol id="rail-list"></ol>
+    <div class="meta">
+      <div id="rail-n"></div>
+      <div>SEC EDGAR, primary_doc.xml</div>
+      <div>retrieved <span id="rail-date"></span></div>
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- ============================================================ hero -->
+    <div class="hero">
+      <div class="kicker mono">
+        <span>Drops</span>
+        <span class="dot">/</span>
+        <span>a16z cosign, read against the record</span>
+        <span class="dot">/</span>
+        <span id="kicker-n">loading the crawl</span>
+      </div>
+
+      <div class="hero-grid">
+        <div>
+          <h1>Who believed in you&nbsp;first?</h1>
+          <p class="stand">Cosign went live on 25 September with a promise: a public
+            record of who backed whom, kept by the people who did the backing.
+            The United States has been publishing its own version of that record,
+            in machine-readable form, every day since 2001. It is thinner than
+            the pitch, and the shape of the gap is the interesting part.</p>
+          <p class="byline mono">Built from <span id="by-f">&#8230;</span> Form D filings pulled
+            straight off EDGAR, with no enrichment layer, no model and no
+            database. Every number on this page is computed from the filings in
+            the receipts at the bottom.</p>
+        </div>
+        <div id="hero-form"></div>
+      </div>
+    </div>
+
+    <!-- ============================================================ item 1 -->
+    <section id="s1">
+      <p class="item-no">Item 1</p>
+      <h2>The pitch, in their words</h2>
+      <p>Cosign is a curated professional network for people and companies in
+        the startup ecosystem, published by Andreessen Horowitz and introduced
+        by Erik Torenberg on 25 September 2026. MTS described the same day as
+        "Wikipedia meets LinkedIn meets AngelList." The homepage headline is two
+        words longer than that: <em class="term">Believe in someone, first.</em></p>
+
+      <blockquote>
+        <p>Build and browse profiles that showcase what makes someone
+          exceptional, cosigned by the people who believe in them.</p>
+        <cite>cosign.co, homepage, retrieved 27 September 2026
+          <a class="src" href="https://cosign.co" target="_blank" rel="noopener">cosign.co</a></cite>
+      </blockquote>
+
+      <p>Strip the design language out and the mechanism is a signed
+        endorsement: a named person attaches their name and standing to another
+        person's record, the endorsement is attributed and permanent rather than
+        a like that scrolls away, and the endorser is paid in visibility for
+        finding people early. A second quote on the same page does the work of
+        a spec: <em class="term">attributable context from people who have
+        worked together.</em></p>
+
+      <p>So the product is a registry of conviction. Who believed in whom, who
+        said so in public, and who was early. That is a good idea and it is not
+        an original one, which is convenient, because the paper version of it is
+        public and nobody has built anything on top of it.</p>
+    </section>
+
+    <!-- ============================================================ item 2 -->
+    <section id="s2">
+      <p class="item-no">Item 2</p>
+      <h2>The government already files it</h2>
+      <p>Rule 506 of Regulation D lets a US company sell shares to accredited
+        investors without registering them. The price of the exemption is a
+        notice, filed with the SEC before the first sale, called Form D. It asks
+        for the company's officers, directors and promoters by name. It asks
+        what industry it is in, what it is raising, how much it has sold, what
+        the securities are, which exemption is being used, and how many people
+        had already bought by the time it filed.</p>
+      <p>It is one of the densest documents American corporate law produces and
+        almost nobody opens. Here are five of them from the sample, unmodified,
+        so you can see what the same page looks like when the issuer is a
+        biotech, an insurer, a property vehicle and a fund. The rows with a warm
+        tint are the four fields that matter for this story.</p>
+
+      <div id="anatomy"></div>
+
+      <h3>What the form gives you</h3>
+      <p>Every issuer, its officers and directors, its industry bucket, the size
+        of the raise, the securities, the exemption, and a date. Join it to the
+        next filing from the same CIK and you get a timeline. This is enough to
+        build a company directory, a sector map, a round-size index and a
+        people index. It is genuinely useful and it took no AI.</p>
+
+      <h3>What it does not give you</h3>
+      <p>It does not ask who the investors were. Not one field. There is a place
+        on the form to say how many people had already bought, and no place at
+        all to say who any of them were. The count is in the public record. The
+        vouching is not. That single omission is the subject of the rest of this
+        page.</p>
+    </section>
+
+    <!-- ============================================================ item 3 -->
+    <section id="s3">
+      <p class="item-no">Item 3</p>
+      <h2>Two thirds of it is not startups</h2>
+      <p id="dir-intro">Loading the crawl.</p>
+      <p>Form D is filed by anything selling securities under an exemption, which
+        includes a great many things that are not companies trying to raise a seed
+        round. In this sample <span class="mono" id="fund-n"></span> of
+        <span class="mono" id="iss-n"></span> filings are pooled investment funds
+        filing under names that read like product companies, and the rest are
+        operating companies. A directory of the startup ecosystem built on this
+        feed has to throw two thirds of it away first.</p>
+
+      <svg class="bars" id="split-chart" viewBox="0 0 420 54" role="img"
+           aria-label="Share of the sample that is pooled investment funds"></svg>
+
+      <p class="note">Every operating-company filing in the sample, searchable.
+        Click any row to open the filing. Click a person's name to see every other
+        company they are named on. Amounts are what the issuer reported as sold by
+        its most recent filing, not a valuation, and most funds report an
+        indefinite offering rather than a number.</p>
+
+      <div class="ctl mono">
+        <input type="search" id="q" placeholder="search issuer, person, accession" aria-label="Search the directory">
+        <select id="f-ind" aria-label="Filter by industry"><option value="">every industry</option></select>
+        <select id="f-sort" aria-label="Sort">
+          <option value="d">filed, newest first</option>
+          <option value="d-asc">filed, oldest first</option>
+          <option value="d$">amount sold, largest first</option>
+          <option value="d$-asc">amount sold, smallest first</option>
+          <option value="k">backers already in, most first</option>
+          <option value="n">issuer name</option>
+        </select>
+        <button class="b" id="f-kind" aria-pressed="true">operating companies only</button>
+        <button class="b" id="f-people" aria-pressed="false">named people only</button>
+        <span class="count" id="dir-count"></span>
+      </div>
+
+      <div class="dirwrap">
+        <div class="scroller">
+          <table class="dir">
+            <caption class="sr">Form D filings from the third quarter of 2026</caption>
+            <thead><tr>
+              <th data-sort="f" scope="col">filed</th>
+              <th data-sort="n" scope="col">issuer</th>
+              <th data-sort="g" scope="col">industry</th>
+              <th data-sort="n" scope="col">officers, directors, promoters</th>
+              <th class="num" data-sort="d$" scope="col">sold</th>
+              <th class="num" data-sort="k" scope="col">backers in</th>
+              <th data-sort="i" scope="col">accession</th>
+            </tr></thead>
+            <tbody id="dir-body"></tbody>
+          </table>
+          <div class="empty" id="dir-empty" hidden>Nothing matches. Try a shorter search.</div>
+        </div>
+      </div>
+
+      <div id="dir-detail"></div>
+    </section>
+
+    <!-- ============================================================ item 4 -->
+    <section id="s4">
+      <p class="item-no">Item 4</p>
+      <h2>The graph you cannot build from it</h2>
+      <p id="graphtext">Pull the named people out of those filings and draw an
+        edge from each person to every company they were named on. That is the
+        endorsement graph, minus the endorsements, taken from the only
+        machine-readable US record of who stood behind a private company when it
+        raised.</p>
+      <p id="graphverdict"></p>
+
+      <div class="readout mono" id="graph-readout"></div>
+
+      <div class="charts">
+        <div class="chart">
+          <h4>How many companies each named person appears on</h4>
+          <p class="sub">Operating-company filings only</p>
+          <svg class="bars" id="deg-chart" viewBox="0 0 420 200" role="img"
+               aria-label="Distribution of how many companies each named person appears on"></svg>
+          <p class="legend" id="deg-legend"></p>
+        </div>
+        <div class="chart">
+          <h4>Where the operating companies are</h4>
+          <p class="sub" id="state-sub"></p>
+          <svg class="bars" id="state-chart" viewBox="0 0 420 250" role="img"
+               aria-label="Operating company filings by issuer state"></svg>
+        </div>
+      </div>
+
+      <h3>The people who do appear twice</h3>
+      <p>These are the only names in the sample that connect two filings. They
+        are almost all founders, which is what you would hope for, and the sample
+        of operating-company repeaters is short enough to read out loud, and the
+        table on the right is all of it. Across the whole corpus the only names
+        that recur on any scale are filing agents and fund administrators, listed
+        on the left. The government record of American startup capital is dense
+        with signature agents and empty of investors.</p>
+
+      <div class="charts">
+        <div class="chart">
+          <h4>Most frequent names anywhere in the sample</h4>
+          <p class="sub">All 1,500 filings, people and legal entities together</p>
+          <svg class="bars" id="agent-chart" viewBox="0 0 420 260" role="img"
+               aria-label="Most frequently named parties across the sample"></svg>
+        </div>
+        <div class="chart">
+          <h4>Every repeat name on an operating company</h4>
+          <p class="sub">Roles are as the filings state them</p>
+          <div class="dirwrap" style="max-height:290px;border:0">
+            <div class="scroller">
+              <table class="dir" id="rep-table">
+                <thead><tr>
+                  <th scope="col">named person</th>
+                  <th class="num" scope="col">filings</th>
+                  <th scope="col">role given</th>
+                  <th scope="col">named on</th>
+                </tr></thead>
+                <tbody id="rep-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ item 5 -->
+    <section id="s5">
+      <p class="item-no">Item 5</p>
+      <h2>The one field that counts backers</h2>
+      <p>Form D has a box, near the bottom, that asks for the total number of
+        investors who had already invested in the offering by the time the
+        filing was made. Most issuers fill it in. The answers cluster the way
+        you would expect: a lot of rounds with one or two backers, a long thin
+        tail of funds buying a hundred small cheques.</p>
+      <p>So the number of people who believed in a startup is on the public
+        record, and who they were is not. The form will tell you the shape of a
+        cap table at the granularity of a count, and nothing else. Cosign is
+        building the missing half as a product, which is either an obvious gap
+        or a business model, depending on how you squint.</p>
+
+      <div class="charts">
+        <div class="chart">
+          <h4>Investors already in, at the moment of filing</h4>
+          <p class="sub" id="ninv-sub"></p>
+          <svg class="bars" id="ninv-chart" viewBox="0 0 420 210" role="img"
+               aria-label="Distribution of the number of investors a filing reported"></svg>
+        </div>
+        <div class="chart">
+          <h4>Reported amount sold per reported backer</h4>
+          <p class="sub" id="check-sub"></p>
+          <svg class="bars" id="check-chart" viewBox="0 0 420 250" role="img"
+               aria-label="Distribution of implied average cheque size"></svg>
+          <p class="legend" id="check-legend"></p>
+        </div>
+      </div>
+
+      <div class="readout mono" id="blank-readout"></div>
+    </section>
+
+    <!-- ============================================================ item 6 -->
+    <section id="s6">
+      <p class="item-no">Item 6</p>
+      <h2>What a reputation layer inherits</h2>
+      <p>Everything above describes a record that mostly does not exist. The
+        reasonable response from a product team is to build it, and to seed it
+        with the people who are already credible, which is what a curated
+        network is. The next question is what happens next, and that one you can
+        answer without any data at all, because it is a property of the
+        mechanism rather than of the market.</p>
+      <p>Below is a model of the mechanism cosign describes, in the simplest
+        form that still has the feature that matters. A set of people. Some of
+        them can endorse. An endorsement is attributed and durable. Profiles
+        below a threshold of endorsements are invisible in search. Reputation
+        weights an endorsement, so being endorsed by someone well endorsed is
+        worth more. Early endorsers are rewarded with reach, which cosign's own
+        copy promises: make discoveries before anyone else.</p>
+      <p>Run it for a few hundred rounds and look at the concentration. Then
+        change the threshold, which is the number a product team argues about
+        most, and watch that it barely matters. Then change who starts with
+        reach, which nobody argues about at all, and watch that it decides
+        everything.</p>
+
+      <div class="panel" id="sim-panel">
+        <div class="panel-head">
+          <span class="t">endorsement model</span>
+          <span class="sp"></span>
+          <span id="sim-status">running</span>
+        </div>
+        <div class="sim">
+          <div class="knobs">
+            <div class="knob">
+              <label for="k-co">visible on day one <b id="v-co">25%</b></label>
+              <input type="range" id="k-co" min="2" max="60" step="1" value="25">
+              <div class="hint">share of the network already credible when it opens</div>
+            </div>
+            <div class="knob">
+              <label for="k-n">people in the network <b id="v-n">2000</b></label>
+              <input type="range" id="k-n" min="500" max="6000" step="100" value="2000">
+            </div>
+            <div class="knob">
+              <label for="k-seed">early endorsers get amplified <b id="v-seed">20</b></label>
+              <input type="range" id="k-seed" min="1" max="300" step="1" value="20">
+            </div>
+            <div class="knob">
+              <label for="k-vis">endorsements to be visible <b id="v-vis">3</b></label>
+              <input type="range" id="k-vis" min="1" max="12" step="1" value="3">
+            </div>
+            <div class="knob">
+              <label for="k-w">reputation weight <b id="v-w">0.85</b></label>
+              <input type="range" id="k-w" min="0" max="0.98" step="0.01" value="0.85">
+              <div class="hint">0 is one person one vote, 0.98 is pay to play</div>
+            </div>
+            <div class="knob">
+              <label for="k-rr">share of flow that is discovery <b id="v-rr">0.30</b></label>
+              <input type="range" id="k-rr" min="0.02" max="1" step="0.02" value="0.30">
+              <div class="hint">the rest is social proof: seen because you look worth seeing</div>
+            </div>
+            <div class="knob">
+              <label for="k-eff">endorsements per round <b id="v-eff">0.06</b></label>
+              <input type="range" id="k-eff" min="0.005" max="0.4" step="0.005" value="0.06">
+            </div>
+            <div class="knob">
+              <label for="k-noise">endorsements unrelated to quality <b id="v-noise">0.50</b></label>
+              <input type="range" id="k-noise" min="0" max="1" step="0.05" value="0.5">
+            </div>
+          </div>
+          <div class="stage">
+            <canvas id="sim-canvas" width="760" height="340"
+                    role="img" aria-label="How the reputation held by the day-one cohort decays over rounds of endorsements, against a run where every endorsement arrives through discovery"></canvas>
+            <div class="legend" id="sim-legend"></div>
+            <div class="acts">
+              <button id="sim-run">run again</button>
+              <button id="sim-shuffle">reshuffle the day-one cohort</button>
+            </div>
+            <p class="legend" style="color:var(--panel-dim);margin-top:10px">
+              The solid line is the share of all accumulated reputation that
+              belongs to the people who were already visible when the network
+              opened. It starts at everything and settles wherever the mechanism
+              settles it. The dashed line is the same network with every
+              endorsement arriving through discovery, which is the control.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="readout mono" id="sim-readout"></div>
+
+      <p id="sim-verdict"></p>
+    </section>
+
+    <!-- ============================================================ item 7 -->
+    <section id="s7">
+      <p class="item-no">Item 7</p>
+      <h2>Receipts</h2>
+      <table class="kv" id="receipts"></table>
+
+      <h3>What this leaves out</h3>
+      <p class="small">Form D covers US private placements under Regulation D
+        only. It misses Reg A, Reg CF, 506 offerings that were never amended,
+        every non-US issuer, every company that raised entirely on SAFEs or
+        internal rounds, and any deal where the notice was late or never filed.
+        SPVs and co-investment vehicles are filed as issuers in their own right,
+        which is why a large share of the corpus is funds filing under names
+        that look like startups. Related persons are matched on normalised
+        name, so a person who files as "J. Smith" in one place and "James
+        Smith" in another is two people here. All of that makes the sample
+        noisier than reality, not cleaner: the sparse graph in Item 4 is a
+        ceiling, not a floor.</p>
+
+      <h3>How to re-run it</h3>
+      <pre>python3 scripts/fetch_formd.py --start 20260701 --end 20260926 \
+  --sample 1500 --seed 20260926
+python3 scripts/build_drop.py
+python3 -m http.server 8000 --directory site</pre>
+      <p class="small">No dependencies, no build step. The crawl reads the
+        EDGAR daily dissemination index to get the population, draws a seeded
+        sample from it, then fetches and parses the structured
+        <span class="mono">primary_doc.xml</span> for each sampled filing.
+        Everything else in this page is derived in the browser from one JSON
+        file.</p>
+    </section>
+
+    <footer class="mono">
+      <span>Drops, a standalone edition</span>
+      <span>Data: SEC EDGAR Form D and Form D-A</span>
+      <span>Rendered client side, no trackers</span>
+      <span id="foot-date"></span>
+    </footer>
+
+  </main>
+</div>
+
+<div class="tip mono" id="tip" role="status" aria-live="polite"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

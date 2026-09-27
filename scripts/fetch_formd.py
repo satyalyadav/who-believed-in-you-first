@@ -1,0 +1,434 @@
+#!/usr/bin/env python3
+"""
+Crawl SEC EDGAR Form D / Form D-A filings for a date window and emit one compact
+JSON record per filing.
+
+Form D is the notice a US issuer files before selling securities under an
+exemption (Reg D). It is the only US filing that names the officers, directors
+and promoters of a private company in machine-readable form, so it is the only
+large public record of who stood behind a startup when it raised.
+
+Stage 1  collect accession numbers from the EDGAR daily dissemination indexes
+Stage 2  fetch the structured primary_doc.xml for each accession
+Stage 3  parse the fields we care about, append to data/formd.jsonl
+
+Resumable: re-running skips accessions already present in the output file.
+"""
+import argparse
+import gzip
+import json
+import os
+import random
+import re
+import sys
+import threading
+import time
+import urllib.error
+import urllib.request
+import xml.etree.ElementTree as ET
+from concurrent.futures import ThreadPoolExecutor
+
+UA = "WhoBelievedInYouFirst research@example.com"
+HEADERS = {
+    "User-Agent": UA,
+    "Accept-Encoding": "gzip",
+    "Accept": "*/*",
+}
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA = os.path.join(ROOT, "data")
+OUT = os.path.join(DATA, "formd.jsonl")
+INDEX_OUT = os.path.join(DATA, "accessions.json")
+
+_print_lock = threading.Lock()
+_gate = threading.Lock()
+_next_slot = [0.0]
+PACE = 0.25  # seconds between request starts, shared by every worker
+
+
+def log(*a):
+    with _print_lock:
+        print(*a, file=sys.stderr, flush=True)
+
+
+def pause(seconds):
+    """Push every worker back by `seconds` after a rate-limit response."""
+    with _gate:
+        _next_slot[0] = max(_next_slot[0], time.time() + seconds)
+
+
+def slot():
+    with _gate:
+        now = time.time()
+        start = max(now, _next_slot[0])
+        _next_slot[0] = start + PACE
+    wait = start - now
+    if wait > 0:
+        time.sleep(wait)
+
+
+MISSING = object()  # the key does not exist on EDGAR; not a rate-limit problem
+
+
+def fetch_bytes(url, deadline_s=25):
+    """urlopen's timeout applies per socket operation, so a server that trickles
+    bytes back can hold a read open forever. Give the whole request a wall clock."""
+    req = urllib.request.Request(url, headers=HEADERS)
+    with urllib.request.urlopen(req, timeout=10) as r:
+        if r.headers.get("Content-Encoding") == "gzip":
+            return gzip.decompress(r.read())
+        chunks = []
+        end = time.time() + deadline_s
+        while True:
+            chunk = r.read(65536)
+            if not chunk:
+                break
+            chunks.append(chunk)
+            if time.time() > end:
+                raise TimeoutError("slow body")
+        return b"".join(chunks)
+
+
+def get(url, tries=8, missing=MISSING):
+    """Fetch a URL. Returns None on a real failure and `missing` on a 404.
+
+    EDGAR answers a nonexistent key with a 403 AccessDenied page, so the status
+    code alone is ambiguous. The body tells the two apart: "AccessDenied" means
+    the key is absent, "Undeclared Automated Tool" means we are going too fast
+    and must back off hard.
+    """
+    for i in range(tries):
+        try:
+            slot()
+            return fetch_bytes(url)
+        except urllib.error.HTTPError as e:
+            try:
+                body = e.read(8000)
+                if e.headers.get("Content-Encoding") == "gzip":
+                    body = gzip.decompress(body)
+                body = body.decode("utf-8", "replace")
+            except Exception:  # noqa: BLE001
+                body = ""
+            if "AccessDenied" in body or e.code == 404:
+                return missing
+            if e.code in (403, 429, 500, 502, 503, 504):
+                wait = min(90, 4.0 * (2 ** i)) + random.random() * 2
+                pause(wait)
+                log(f"  throttled ({e.code}) on {url.rsplit('/', 1)[-1]}; pausing {wait:.0f}s")
+                time.sleep(wait * 0.25)
+                continue
+            return None
+        except Exception:  # noqa: BLE001
+            time.sleep(1.0 * (i + 1) + random.random())
+    return None
+
+
+def accession_url(cik, acc, doc="primary_doc.xml"):
+    return f"https://www.sec.gov/Archives/edgar/data/{int(cik)}/{acc.replace('-', '')}/{doc}"
+
+
+def index_url(cik, acc):
+    return f"https://www.sec.gov/Archives/edgar/data/{int(cik)}/{acc.replace('-', '')}/index.json"
+
+
+# ---------------------------------------------------------------- stage 1
+def collect_accessions(start, end):
+    """Walk the EDGAR daily dissemination indexes and pull every Form D row.
+
+    If a wider crawl is already cached we slice it locally instead of asking
+    EDGAR for the same index files twice.
+    """
+    if os.path.exists(INDEX_OUT):
+        cached = json.load(open(INDEX_OUT))
+        window = cached.get("window") or ["", ""]
+        rows = cached.get("rows") or []
+        if window[0] <= start and window[1] >= end and rows:
+            sliced = [r for r in rows if start <= r["filed"] <= end]
+            log(f"accessions: sliced {len(sliced)} rows out of the cached "
+                f"{window[0]}-{window[1]} crawl")
+            return sliced
+
+    rows = []
+    y = int(start[:4])
+    day = start
+    while day <= end:
+        m = int(day[4:6])
+        q = (m - 1) // 3 + 1
+        url = f"https://www.sec.gov/Archives/edgar/daily-index/{y}/QTR{q}/form.{day}.idx"
+        raw = get(url, missing=None)
+        if raw is None:
+            day = _next_day(day)
+            continue
+        text = raw.decode("utf-8", "replace")
+        n = 0
+        for line in text.split("\n"):
+            form = line[0:10].strip()
+            if form not in ("D", "D/A"):
+                continue
+            mm = re.search(r"edgar/data/(\d+)/(\d{10}-\d{2}-\d{6})\.txt", line)
+            if not mm:
+                continue
+            rows.append(
+                {
+                    "acc": mm.group(2),
+                    "cik": mm.group(1),
+                    "form": form,
+                    "name": line[10:72].strip(),
+                    "filed": day,
+                }
+            )
+            n += 1
+        day = _next_day(day)
+        if day[8:] == "01":
+            time.sleep(0.2)
+    os.makedirs(DATA, exist_ok=True)
+    json.dump({"window": [start, end], "rows": rows}, open(INDEX_OUT, "w"))
+    log(f"accessions: {len(rows)} Form D/A filings between {start} and {end}")
+    return rows
+
+
+def _next_day(day):
+    d = int(day[6:8]) + 1
+    m, y = int(day[4:6]), int(day[:4])
+    while d > _days_in(m, y):
+        d = 1
+        m += 1
+        if m > 12:
+            m, y = 1, y + 1
+    return f"{y:04d}{m:02d}{d:02d}"
+
+
+def _days_in(m, y):
+    return [31, 29 if (y % 4 == 0 and (y % 100 or y % 400 == 0)) else 28, 31, 30, 31, 30,
+            31, 31, 30, 31, 30, 31][m - 1]
+
+
+# ---------------------------------------------------------------- stage 3
+def txt(node, *path):
+    cur = node
+    for p in path:
+        if cur is None:
+            return None
+        cur = cur.find(p)
+    return cur.text if cur is not None else None
+
+
+def money(v):
+    if v is None:
+        return None
+    v = v.strip().replace(",", "").replace("$", "")
+    if not v or v.lower() in ("indefinite", "n/a", "not applicable"):
+        return None
+    try:
+        return int(float(v))
+    except ValueError:
+        return None
+
+
+def parse_formd(raw, meta):
+    try:
+        root = ET.fromstring(raw)
+    except ET.ParseError:
+        return None
+
+    iss = root.find("primaryIssuer")
+    if iss is None:
+        return None
+
+    persons = []
+    for rp in root.findall("./relatedPersonsList/relatedPersonInfo"):
+        first = (txt(rp, "relatedPersonName", "firstName") or "").strip()
+        last = (txt(rp, "relatedPersonName", "lastName") or "").strip()
+        if not first and not last:
+            continue
+        rels = [r.text for r in rp.findall("./relatedPersonRelationshipList/relationship") if r.text]
+        if rels == ["None"]:
+            rels = []
+        clar = txt(rp, "relationshipClarification")
+        persons.append(
+            {
+                "n": " ".join(x for x in (first, last) if x).strip(),
+                "f": first,
+                "l": last,
+                "r": rels,
+                "c": (clar or "").strip() or None,
+                "st": txt(rp, "relatedPersonAddress", "stateOrCountry"),
+            }
+        )
+
+    off = root.find("offeringData")
+    if off is None:
+        return None
+
+    ind = off.find("industryGroup")
+    industry = None
+    fund_type = None
+    is_40act = None
+    if ind is not None:
+        gt = txt(ind, "industryGroupType")
+        industry = gt.strip() if gt else None
+        fund_type = txt(ind, "investmentFundInfo", "investmentFundType")
+        is_40act = txt(ind, "investmentFundInfo", "is40Act")
+
+    exc = [i.text for i in off.findall("./federalExemptionsExclusions/item") if i.text]
+
+    sig = off.find("./signatureBlock/signature")
+    signer = None
+    if sig is not None:
+        signer = {
+            "n": txt(sig, "nameOfSigner"),
+            "t": txt(sig, "signatureTitle"),
+            "d": txt(sig, "signatureDate"),
+        }
+
+    am = off.find("./typeOfFiling/newOrAmendment/isAmendment")
+    prev = off.find("./typeOfFiling/amendmentNumber/previousAccessionNumber")
+    dfs = off.find("./typeOfFiling/dateOfFirstSale")
+    first_sale = None
+    yet_to_occur = None
+    if dfs is not None:
+        first_sale = txt(dfs, "dateOfFirstSale")
+        yet_to_occur = txt(dfs, "yetToOccur") == "true"
+
+    sold = money(txt(off, "offeringSalesAmounts", "totalAmountSold"))
+    offering_raw = txt(off, "offeringSalesAmounts", "totalOfferingAmount")
+    remaining_raw = txt(off, "offeringSalesAmounts", "totalRemaining")
+
+    yr = off.find("./issuerSize/revenueRange")
+    nav = off.find("./issuerSize/aggregateNetAssetValueRange")
+
+    sec_types = []
+    st = off.find("typesOfSecuritiesOffered")
+    if st is not None:
+        for child in st:
+            tag = child.tag
+            if child.text and child.text.strip().lower() in ("true", "false"):
+                if child.text.strip().lower() == "true":
+                    sec_types.append(tag)
+
+    return {
+        "acc": meta["acc"],
+        "cik": meta["cik"],
+        "form": meta["form"],
+        "filed": meta["filed"],
+        "name": (txt(iss, "entityName") or meta["name"]).strip(),
+        "juris": txt(iss, "jurisdictionOfInc"),
+        "etype": txt(iss, "entityType"),
+        "yinc": txt(iss, "yearOfInc", "value"),
+        "city": txt(iss, "issuerAddress", "city"),
+        "state": txt(iss, "issuerAddress", "stateOrCountry"),
+        "prev": [p.text for p in iss.findall("./issuerPreviousNameList/value") if p.text and p.text != "None"],
+        "p": persons,
+        "ind": industry,
+        "ftype": fund_type,
+        "f40": is_40act == "true" if is_40act is not None else None,
+        "rev": yr.text.strip() if yr is not None else None,
+        "nav": nav.text.strip() if nav is not None else None,
+        "exc": exc,
+        "506c": "06c" in exc,
+        "amend": am is not None and am.text == "true",
+        "prevAcc": prev.text if prev is not None and prev.text else None,
+        "sale0": first_sale,
+        "yet": yet_to_occur,
+        "offer": money(offering_raw),
+        "offerIndef": bool(offering_raw and "ndefined" in offering_raw),
+        "sold": sold,
+        "rem": money(remaining_raw),
+        "remIndef": bool(remaining_raw and "ndefined" in remaining_raw),
+        "ninv": int(txt(off, "investors", "totalNumberAlreadyInvested") or 0),
+        "comm": money(txt(off, "salesCommissionsFindersFees", "salesCommissions", "dollarAmount")),
+        "fees": money(txt(off, "salesCommissionsFindersFees", "findersFees", "dollarAmount")),
+        "proceeds": money(txt(off, "useOfProceeds", "grossProceedsUsed", "dollarAmount")),
+        "secs": sec_types,
+        "bcombo": txt(off, "businessCombinationTransaction", "isBusinessCombinationTransaction") == "true",
+        "sig": signer,
+    }
+
+
+# ---------------------------------------------------------------- stage 2
+def fetch_one(row, stats):
+    raw = get(accession_url(row["cik"], row["acc"]), missing=None)
+    if raw is None:
+        # agent-generated filing: find the real xml name via the index
+        raw = None
+        idx = get(index_url(row["cik"], row["acc"]), missing=None)
+        if idx:
+            try:
+                items = json.loads(idx)["directory"]["item"]
+                for it in items:
+                    n = it["name"]
+                    if n.endswith(".xml") and "primary_doc" not in n and not n.startswith("xsl"):
+                        raw = get(accession_url(row["cik"], row["acc"], n), missing=None)
+                        if raw:
+                            break
+            except Exception:  # noqa: BLE001
+                pass
+    if raw is None:
+        with _print_lock:
+            stats["miss"] += 1
+        return None
+    rec = parse_formd(raw, row)
+    if rec is None:
+        with _print_lock:
+            stats["unparsed"] += 1
+        return None
+    with _print_lock:
+        stats["ok"] += 1
+        stats["done"] += 1
+        if stats["done"] % 500 == 0:
+            log(f"  {stats['done']}/{stats['total']} parsed")
+    return rec
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--start", default="20260701")
+    ap.add_argument("--end", default="20260926")
+    ap.add_argument("--workers", type=int, default=5)
+    ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--pace", type=float, default=0.14)
+    ap.add_argument("--tries", type=int, default=4)
+    ap.add_argument("--sample", type=int, default=0,
+                    help="take a reproducible random sample of N filings")
+    ap.add_argument("--seed", type=int, default=20260831)
+    args = ap.parse_args()
+    global PACE
+    PACE = args.pace
+
+    os.makedirs(DATA, exist_ok=True)
+    rows = collect_accessions(args.start, args.end)
+
+    # the sample is drawn from the whole population, not from whatever is left
+    # to fetch, so re-running with the same seed always yields the same corpus
+    if args.sample:
+        rnd = random.Random(args.seed)
+        todo = sorted(rnd.sample(rows, min(args.sample, len(rows))), key=lambda r: r["acc"])
+    else:
+        todo = list(rows)
+
+    done = set()
+    if os.path.exists(OUT):
+        for line in open(OUT):
+            try:
+                done.add(json.loads(line)["acc"])
+            except Exception:  # noqa: BLE001
+                pass
+    todo = [r for r in todo if r["acc"] not in done]
+    if args.limit:
+        todo = todo[: args.limit]
+    log(f"filings: {len(rows)} total, {len(done)} already on disk, {len(todo)} to fetch")
+
+    stats = {"ok": 0, "miss": 0, "unparsed": 0, "done": 0, "total": len(todo)}
+    t0 = time.time()
+    with open(OUT, "a") as fh, ThreadPoolExecutor(max_workers=args.workers) as ex:
+        for rec in ex.map(lambda r: fetch_one(r, stats), todo):
+            if rec:
+                fh.write(json.dumps(rec, separators=(",", ":")) + "\n")
+                fh.flush()
+    dt = time.time() - t0
+    log(f"filings: {stats['ok']} parsed, {stats['miss']} missing, {stats['unparsed']} unparsed in {dt:.0f}s "
+        f"({stats['ok']/max(dt,1):.1f}/s) -> {OUT}")
+
+
+if __name__ == "__main__":
+    main()

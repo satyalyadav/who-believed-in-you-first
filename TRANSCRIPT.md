@@ -1,0 +1,284 @@
+# Transcript
+
+The conversation that produced the drop, condensed. Tool calls are summarised;
+findings, decisions and dead ends are kept because they are the useful part.
+
+---
+
+## 1. The brief
+
+**User:** posts a screenshot of a LinkedIn post from Dhruv Gupta, a16z product
+and engineering, hiring engineers. The ask, in full: take a look at
+drops.mts.now, build a drop themed around cosign and social networks ideally,
+post about it, and DM him the git with a transcript of the agent conversation
+used to build it.
+
+**Agent:** the transcript is part of the deliverable, so this document is one of
+the outputs rather than a byproduct.
+
+---
+
+## 2. Working out what the subject actually is
+
+Read `drops.mts.now` and the existing archive. The house style is clear:
+dark, editorial, data-driven, numbered like a filing, every claim tied to a
+receipt. Twenty-four prior drops, all about systems rather than opinions.
+
+Read cosign.co. The load-bearing copy:
+
+> Build and browse profiles that showcase what makes someone exceptional,
+> cosigned by the people who believe in them.
+
+> Attributable context from people who have worked together.
+
+Searched for launch coverage. Confirmed: 25 September 2026, Erik Torenberg,
+David Booth, Dani Grant, Katie Kirsch. MTS's own post called it "Wikipedia meets
+LinkedIn meets AngelList." One partner's framing is the most useful line anyone
+wrote about it: "The most valuable data in all of Silicon Valley is who has
+conviction in whom."
+
+That is a falsifiable product claim, and there is an unusually direct way to test
+it. The US government has been publishing a record of who stood behind a private
+company, in machine-readable form, every day since 2001. **Form D.**
+
+---
+
+## 3. Proving the data exists before designing anything
+
+Tested whether EDGAR was reachable and what it would take to pull a quarter.
+
+```
+$ curl -s -o /dev/null -w "%{http_code}" \
+    -A "ResearchProject research@example.com" \
+    "https://www.sec.gov/Archives/edgar/daily-index/2026/QTR3/form.20260924.idx"
+200
+```
+
+First attempt used a `curl` user agent that was too informal. SEC answered 403
+with a page titled "Your Request Originates from an Undeclared Automated Tool."
+Their current policy wants a declared UA with contact details. Fixed, 200.
+
+Walked the daily dissemination index for Q3 2026: **15,282 Form D and Form D-A
+filings across 61 business days**, about 227 a day. All of it free, no key.
+
+Fetched one filing. The URL that matters is not the human-facing one:
+
+```
+.../Archives/edgar/data/2141133/000214113326000001/primary_doc.xml
+```
+
+That is structured XML, not the HTML rendering, and it is 8KB instead of 36KB.
+A probe of 25 accessions found `primary_doc.xml` present in 25 of 25, so the
+crawl needs exactly one request per filing and no index lookup.
+
+The fields that matter, straight out of the schema:
+
+```xml
+<relatedPersonsList>
+  <relatedPersonInfo>
+    <relatedPersonName><firstName>William</firstName><lastName>Brilliant</lastName>
+    <relatedPersonRelationshipList><relationship>Executive Officer</relationship>
+<offeringSalesAmounts>
+  <totalOfferingAmount>Indefinite</totalOfferingAmount>
+  <totalAmountSold>0</totalAmountSold>
+<investors><totalNumberAlreadyInvested>0</totalNumberAlreadyInvested>
+```
+
+That last block is the whole story. `totalNumberAlreadyInvested` is the only
+place on the form where the number of people who backed a company appears. There
+is no field for who they were. Not one, anywhere on the form.
+
+---
+
+## 4. Two hours lost to a rate limit, and what it taught
+
+The crawl worked at 4 requests a second for about a minute. Then this:
+
+```
+throttled (429) on primary_doc.xml; pausing 6s
+throttled (429) on primary_doc.xml; pausing 16s
+throttled (429) on primary_doc.xml; pausing 32s
+```
+
+SEC answers a nonexistent key with `403 AccessDenied` and answers too much
+traffic with `429`, with no `Retry-After` header. My first version retried both,
+so every weekend in the window cost 16 seconds of exponential backoff before
+giving up, and the crawler spent most of its life asleep.
+
+Diagnosed it properly rather than guessing:
+
+```
+$ curl -w "%{http_code}" -A "Mozilla/5.0 ... Chrome/140.0" <url>   # 429
+$ curl -w "%{http_code}" -A "research@example.com" <url>           # 429
+$ curl -w "%{http_code}" --http1.1 <url>                           # 429
+```
+
+Not the user agent, not the protocol, not the URL. An IP-level block, and it
+survived eight minutes of complete silence. Fixed the 403/429 conflation by
+reading the body, wrote a prober that waits for a 200 before starting, and
+accepted that the sample would have to be smaller.
+
+Two more things went wrong here and both are now load-bearing in the repo:
+
+**A variable that was not global.** `PACE = args.pace` inside `main()` created a
+function-local, so the rate limiter silently ran at its 0.14s default for the
+whole session. Discovered by arithmetic: 289 records in 45 seconds is 6.4/s, and
+the limiter was supposed to cap at 1.1/s. Fixed with an explicit `global`.
+
+**A socket that would not let go.** `urlopen(timeout=30)` sets the timeout per
+socket operation, not for the request. The crawler stalled at 497 records, then
+again at 996, both times on a response that trickled bytes forever. Thread
+cancellation cannot interrupt a blocking read, so the fix was to stop trying to
+be clever: `supervise.py` runs the fetcher under a 150-second wall clock and
+starts it again. It is resumable, and once the sample moved to being drawn from
+the whole population rather than from whatever was left to fetch, a restart
+picks up exactly where it stopped.
+
+Lesson worth keeping: the polite, resumable, wall-clock-bounded design was not
+gold-plating. It was the only reason the crawl finished.
+
+---
+
+## 5. Deciding the shape of the sample
+
+Two options. Fetch all 15,282 filings, which at a survivable 1/s is four hours.
+Or take a seeded sample and say so.
+
+Sampled, 1,500 filings, seed 20260926, and the seed is printed in the receipts
+table and in the README so anyone can reproduce the exact corpus. The
+population count comes from the daily index, which was read in full, so the
+denominator is exact even though the numerator is a sample.
+
+First instinct was to frame the page around the whole quarter. The first pass
+through the data killed that:
+
+```
+distinct persons: 2,942 appearances, 3,369
+  appear exactly once: 2,708  (92.0%)
+top repeat names:
+  'n/a fund gp, llc'            75
+  'n/a belltower fund group'    71
+  'llc sydecar'                 35
+  'brett sagan'                 33
+  'cameron vail'                29
+```
+
+Two thirds of the corpus is pooled investment funds, and the only names that
+recur at any scale are administrative agents signing as director on behalf of
+seventy-five separate vehicles. The framing that survived: **two thirds of Form D
+is not startups**, and a startup directory built on this feed has to throw that
+away first. Every statistic on the page is now reported twice, once for the whole
+corpus and once for operating companies only, because the two stories are
+different and only one of them is about startups.
+
+---
+
+## 6. Three things I got wrong, all of them visible on the page
+
+**"true" in the form.** The related-persons block rendered the literal string
+`true` in the label column of every row, because a placeholder helper was called
+with a boolean. Only caught it by looking at a screenshot. Fixed, and the block
+now mirrors the real form: a name row and a relationship row per person.
+
+**A metric that saturated.** The simulation's headline number was "the share of
+accumulated reputation held by whoever was visible on day one." At the default
+settings it read a clean 75% against a 24% control, which looked great. Sweeping
+the sliders showed that at a 2% day-one cohort it reads 100.0%, and at a 60%
+cohort it also reads 100.0%, and neither is possible unless the metric is
+degenerate. It was: when the day-one cohort is the only group that can endorse,
+it necessarily collects almost everything, so the ratio pins at 1.
+
+Replaced it with a capture ratio, reputation share divided by the cohort's share
+of the network, where 1.0 is parity. It is defined everywhere in the parameter
+space and it means the same thing at 2% and at 60%: **2.87x** at the defaults
+against **1.00x** for the all-discovery control.
+
+**Copy I had not checked.** I had written that the visibility threshold "barely
+matters." The sweep says it moves the capture ratio from 2.22x at one required
+endorsement to 3.82x at twelve. So it matters a great deal, and I was about to
+publish the opposite. Rather than write a safer sentence, the page now runs the
+model at both ends of that slider on every change and prints the two numbers it
+measures. Any claim about the model on the page is now a number the page just
+computed.
+
+The sensitivity sweep that did it:
+
+| setting | capture | control | visible |
+| --- | --- | --- | --- |
+| defaults | 2.87x | 1.00x | 1,757 |
+| threshold 1 | 2.22x | 1.01x | 1,976 |
+| threshold 12 | 3.82x | 2.40x | 537 |
+| reputation weight 0 | 3.72x | 1.15x | 769 |
+| reputation weight 0.98 | 2.84x | 1.03x | 1,770 |
+| day-one cohort 2% | 14.56x | 0.99x | 1,764 |
+| day-one cohort 60% | 1.48x | 1.01x | 1,837 |
+| all discovery | 0.99x | 1.00x | 2,000 |
+
+---
+
+## 7. Design, in one pass
+
+The subject is a regulatory form, so the page is a regulatory form. Cold paper
+rather than cream, one mono family for everything structural and a high-contrast
+serif for the voice narrating it. The only ornament is the X you put in a box
+when something is true, which is the actual interaction on Form D and became the
+page's progress indicator, its checkbox and its accent colour.
+
+The hero is a real filing, not a title card. CorePower Magnetics, Pittsburgh,
+fourteen and a third million dollars sold, seven investors named as a count.
+Pick a filing you have actually read and the headline stops being a headline and
+starts being a caption.
+
+Rejected on the way: a force-directed graph of the whole name graph, which is a
+hairball when 97.5% of nodes have degree one. A force layout earns its keep when
+there is structure; here the absence of structure is the finding, and a
+histogram of degrees says it in one bar.
+
+---
+
+## 8. Verification
+
+Layout was checked in a real browser rather than by eye. The preview tool's
+screenshot path was broken in this environment, so a local Chromium was
+installed and driven with Playwright: one screenshot per section at 1440px, one
+at 390px, plus a scripted overflow audit and a click-through of the search,
+filters, sorting, person links, filing detail and every slider.
+
+Three layout bugs came out of that and none would have been obvious without it:
+SVG charts scaling their own text to 2.7x because the viewBox was a fixed 420px
+in a 1116px column, a grid blowout on mobile because `.chart` was missing
+`min-width: 0`, and a horizontal scroll on the whole page traced to a `nav` with
+`min-width: auto` inside a grid.
+
+Final numbers, all computed in `build_drop.py` and printed in the receipts table
+so the page cannot disagree with the crawl:
+
+```
+sample: 1,500 of 15,282 filings in the quarter
+issuers: 1,487 after folding 546 amendments
+funds: 1,003 (67.45%)      operating companies: 484 (32.55%)
+names on operating companies: 1,251 distinct, 1,289 appearances
+  97.52% appear once, 31 repeaters adding 38 edges
+filings naming no human being: 335
+backer counts: 404 of 484 operating companies report one
+  median 7 backers, median implied cheque $206,250, Gini 0.903
+```
+
+---
+
+## 9. What I would do next
+
+The 484 operating-company filings are one quarter of one exemption. The same
+code against Reg A and Reg CF, and against the 13D/G and Form ADV records where
+fund managers and their LPs are named, would connect the two thirds of the corpus
+that this drop throws away. The interesting graph is not people to companies, it
+is people to funds to companies, and the fund half of it is sitting in a
+different set of filings that nobody has joined up.
+
+The other thing worth saying out loud: this page measures a filing corpus, and a
+filing corpus is a record of what somebody was required to write down. Form D
+names officers and directors because the SEC needed to know who was responsible
+for the disclosure. It does not name investors because nobody required it. The
+absence is not evidence that nobody vouched for anybody. It is evidence that
+nobody thought to ask them to say so on a form, which is precisely the gap cosign
+is selling into, and precisely why the product is worth building.
