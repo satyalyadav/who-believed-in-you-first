@@ -1,7 +1,8 @@
 /* The endorsement model, off the main thread.
-   Four runs happen per redraw: the one you see, an all-discovery control, and
-   two probes at the ends of the visibility slider. Only the first needs a
-   series; the other three need one number, so they skip snapshotting entirely. */
+   The curve streams back to the page as it is computed, a few points at a time,
+   so dragging a slider redraws continuously instead of jumping once at the end.
+   The comparison numbers in the prose cost three more runs, so they are held
+   back until the reader stops moving things. */
 
 "use strict";
 
@@ -14,10 +15,19 @@ function mulberry32(a) {
   };
 }
 
-/* One run. `series` controls whether the time series is recorded; when it is
-   false the run still measures the final state, which is all the control and
-   the threshold probes are asked for. */
-function simulate(cfg, series) {
+/* Snapshot density. The curve moves fast in the first two hundred rounds and then
+   flattens, so sampling is dense early and sparse late. Around a hundred points
+   over a thousand rounds is smooth at any width the canvas is ever drawn. */
+function snapshotAt(t) {
+  if (t < 200) return t % 4 === 0;
+  if (t < 500) return t % 10 === 0;
+  return t % 25 === 0;
+}
+
+/* One run. `series` controls whether the time series is recorded, which the
+   control and the two threshold probes do not need. `onProgress` receives the
+   series so far, throttled, while the run is still going. */
+function simulate(cfg, series, onProgress) {
   const { n, seed, vis, w, eff, reach, noise, cohort } = cfg;
   const rnd = mulberry32((0x9e3779b9 ^ Math.imul(Math.round(seed * 2654435761), 2654435761)) >>> 0);
   const rep = new Float64Array(n);
@@ -36,7 +46,6 @@ function simulate(cfg, series) {
 
   const out = [];
   let top20 = null;
-  let last = null;
 
   /* nend only ever grows, so once somebody clears the visibility threshold they
      stay visible forever. That makes the set of people who can endorse into the
@@ -51,10 +60,12 @@ function simulate(cfg, series) {
   const crossing = new Int32Array(n);
   let pending = 0;
 
+  const events = (n * eff) | 0;
+  let lastPush = 0;
+
   for (let t = 0; t < 1000; t++) {
     if (activeN < 3) break;
 
-    const events = n * eff | 0;
     for (let e = 0; e < events; e++) {
       const endorser = active[(rnd() * activeN) | 0];
 
@@ -90,10 +101,17 @@ function simulate(cfg, series) {
     pending = 0;
 
     if (t === 19) top20 = topOf(rep, nend, vis, n, 0.01);
-    if (series && t % 5 === 0 && t !== 999) out.push(snapshot(t, rep, nend, vis, n, firstDay, cohortN));
+    if (series && snapshotAt(t)) {
+      out.push(snapshot(t, rep, nend, vis, n, firstDay, cohortN));
+      // hand the curve back mid-flight so the page can draw it as it grows
+      if (onProgress && out.length - lastPush >= 8) {
+        lastPush = out.length;
+        onProgress(out);
+      }
+    }
   }
 
-  last = snapshot(999, rep, nend, vis, n, firstDay, cohortN);
+  const last = snapshot(999, rep, nend, vis, n, firstDay, cohortN);
   if (series) out.push(last);
 
   const end = topOf(rep, nend, vis, n, 0.01);
@@ -110,15 +128,14 @@ function topOf(rep, nend, vis, n, frac) {
 }
 
 /* The shape of the network at one moment. Sorting a typed array rather than
-   spreading a Float64Array into a JS array and sorting that is about five times
-   faster, which matters because this runs a few hundred times per redraw. */
+   spreading a Float64Array into a JavaScript array and sorting that is about five
+   times faster, and this runs about a hundred times per redraw. */
 function snapshot(t, rep, nend, vis, n, firstDay, cohortN) {
   const live = new Float64Array(n);
   let m = 0;
   for (let i = 0; i < n; i++) {
     if (nend[i] >= vis) live[m++] = rep[i] + nend[i] * 0.01;
   }
-  const visible = m;
   const sorted = live.subarray(0, m).slice().sort();
   sorted.reverse();
   let total = 0;
@@ -133,8 +150,8 @@ function snapshot(t, rep, nend, vis, n, firstDay, cohortN) {
   }
   const share = k => {
     let s = 0;
-    const m2 = Math.min(k, m);
-    for (let i = 0; i < m2; i++) s += sorted[i];
+    const lim = Math.min(k, m);
+    for (let i = 0; i < lim; i++) s += sorted[i];
     return s / total;
   };
 
@@ -147,7 +164,7 @@ function snapshot(t, rep, nend, vis, n, firstDay, cohortN) {
   }
   const cohortShare = cohortRep / total;
   return {
-    t, visible,
+    t, visible: m,
     share: m ? sorted[0] / total : 0,
     p50, p90,
     top1share: share(Math.max(1, Math.round(m * 0.01))),
@@ -168,25 +185,40 @@ function giniOf(desc, total, m) {
 self.onmessage = e => {
   const cfg = e.data;
   const id = cfg.id;
-  const main = simulate(cfg, true);
-  // ship the curve the reader is looking at before spending time on the numbers
-  // the prose quotes
+  const quick = !!cfg.quick;
+
+  // stage 1 and 2: the curve, streamed, then finished
+  const main = simulate(cfg, true, series => {
+    self.postMessage({ id, stage: 1, series: series.map(p => [p.t, p.capture]) });
+  });
   self.postMessage({
-    id, stage: 1,
+    id, stage: 2,
     series: main.series.map(p => [p.t, p.capture]),
     last: main.last,
     lock: main.lock,
   });
+
+  if (quick) return;
+
+  // stage 3: the extreme values the prose quotes, each measured rather than
+  // asserted. These cost four more runs, which is why they wait for the drag to
+  // finish.
   const ctl = simulate({ ...cfg, reach: 1, seed: cfg.seed + 7919 }, false);
-  // the threshold is the dial product teams argue about, so measure it rather
-  // than assert it
   const low = simulate({ ...cfg, vis: 1 }, false);
   const high = simulate({ ...cfg, vis: 12 }, false);
+  const thin = simulate({ ...cfg, cohort: 0.02 }, false);
+  const fat = simulate({ ...cfg, cohort: 0.6 }, false);
+  const ampLo = simulate({ ...cfg, seed: 1 }, false);
+  const ampHi = simulate({ ...cfg, seed: 300 }, false);
   self.postMessage({
-    id, stage: 2,
+    id, stage: 3,
     flat: { capture: ctl.last.capture, visible: ctl.last.visible },
     lockFlat: ctl.lock,
     capLow: low.last.capture,
     capHigh: high.last.capture,
+    capThin: thin.last.capture,
+    capFat: fat.last.capture,
+    capAmpLo: ampLo.last.capture,
+    capAmpHi: ampHi.last.capture,
   });
 };

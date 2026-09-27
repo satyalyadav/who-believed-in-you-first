@@ -142,7 +142,7 @@
     <section id="s3">
       <h2 class="with-no"><span class="item-no">Item 3</span><span>Two thirds of it is not startups</span></h2>
       <p id="dir-intro">Loading the crawl.</p>
-      <p>Form D is filed by anything selling securities under an exemption, which
+      <p>Form D is filed by anything selling securities under Regulation D, which
         includes a great many things that are not companies trying to raise a seed
         round. In this sample <span class="mono" id="fund-n"></span> of
         <span class="mono" id="iss-n"></span> filings are pooled investment funds
@@ -287,11 +287,11 @@
         investors who had already invested in the offering by the time the
         filing was made. Every operating company in the sample answers it. None
         of them leaves it blank. The shape is not the one you would guess. A
-        quarter report a single backer, a third report eleven or more, and the
-        largest single band is three to five. This is not a tail of small
-        friends-and-family cheques. It is mostly small institutional rounds with
-        a handful of buyers each, which is the part of the market nobody has ever
-        felt the need for a directory.</p>
+        quarter report one or two backers, 83 of them exactly one, a third report
+        eleven or more, and the largest single band is three to five. This is not
+        a tail of small friends-and-family cheques. It is mostly small
+        institutional rounds with a handful of buyers each, which is the part of
+        the market nobody has ever felt the need for a directory.</p>
       <p>So the number of people who believed in a startup is on the public
         record, and who they were is not. The form will tell you the shape of a
         cap table at the granularity of a count, and nothing else. Cosign is
@@ -392,11 +392,12 @@
               <button id="sim-shuffle">random seed</button>
             </div>
             <p class="legend" style="color:var(--panel-dim);margin-top:10px">
-              The solid line is the share of all accumulated reputation that
-              belongs to the people who were already visible when the network
-              opened. It starts at everything and settles wherever the mechanism
-              settles it. The dashed line is the same network with every
-              endorsement arriving through discovery, which is the control.
+              Both lines are the day-one cohort's reputation measured against its
+              share of the network, so 1x is parity and anything above it is a
+              head start the mechanism never gives back. The solid line is a run
+              with social proof in it. The dashed line is the same network with
+              every endorsement arriving through discovery instead, which is the
+              control, and it sits on parity.
             </p>
           </div>
         </div>
@@ -413,13 +414,18 @@
       <table class="kv" id="receipts"></table>
 
       <h3>What this leaves out</h3>
-      <p class="small">Form D covers US private placements under Rule 504 and
-        Rule 506 of Regulation D. It misses Rule 504 offerings, Regulation A,
-        Regulation CF, every non-US issuer, every company that raised entirely on
-        SAFEs or internal rounds, and any offering where the notice was late or
-        never filed, which the SEC does enforce. Co-investment vehicles and SPVs
-        file as issuers in their own right, which is why two thirds of the corpus
-        is funds filing under names that read like product companies.</p>
+      <p class="small">Form D covers US private placements under Rule 504,
+        Rule 506(b) and Rule 506(c) of Regulation D, and Section 4(a)(5). All of
+        those appear in the sample. What it misses is Regulation A, which files on
+        Form 1-A, Regulation CF, which files on Form C, any offering made entirely
+        outside the United States, and any offering where the notice was late or
+        never filed, which the SEC does enforce. It does not miss foreign issuers:
+        a Cayman or Luxembourg vehicle selling into the United States files a
+        Form D like anyone else, and <span class="mono" id="nonus"></span> non-US
+        issuers are in this sample, led by the Cayman Islands and Luxembourg.
+        Co-investment vehicles and SPVs file as issuers in their own right, which
+        is why two thirds of the corpus is funds filing under names that read like
+        product companies.</p>
       <p class="small">Two things about the names. A person is counted once per
         issuer, so an amendment that repeats a director has not put them on a
         second company. Generational suffixes are stripped before matching, so

@@ -473,20 +473,22 @@ function renderGraph() {
   const st = D.stats;
   const co = st.coNames;
 
+  const nodes = co.distinct + st.cos;
+  const edges = co.appearances;
   $("#graphverdict").innerHTML =
     `It is almost entirely not there. Restricting to the
-     <span class="mono">${fmt(st.cos)}</span> operating-company filings,
-     <span class="mono">${fmt(co.distinct)}</span> distinct people are named and
-     <b>${co.oncePct}%</b> of them appear on exactly one company, which makes them
-     a dead end in any graph you build. That leaves
-     <span class="mono">${fmt(co.repeat)}</span> people who connect two filings
-     and <span class="mono">${fmt(co.bridged)}</span> edges between
-     <span class="mono">${fmt(st.cos)}</span> companies. The entire recorded social
-     graph of who stood behind an American startup this quarter is
-     <b>${fmt(co.repeat)} nodes and ${fmt(co.bridged)} edges</b>, and not one
-     investor is in it, because investors are not who Form D names. Across the
-     whole sample, ${fmt(st.entityOnly)} of ${fmt(st.sample)} filings name no human
-     being at all.`;
+     <span class="mono">${fmt(st.cos)}</span> operating-company filings, the graph
+     has <span class="mono">${fmt(nodes)}</span> nodes: ${fmt(co.distinct)} people
+     and ${fmt(st.cos)} companies. It has <span class="mono">${fmt(edges)}</span>
+     edges. Every one of those people accounts for one of them, and the other
+     <b>${fmt(co.bridged)} edges</b> are the only places in the whole graph where
+     anything connects, because <b>${co.oncePct}%</b> of the people named appear
+     on exactly one company and connect to nothing else. Those
+     ${fmt(co.bridged)} edges come from just
+     <span class="mono">${fmt(co.repeat)}</span> people. Not one investor is among
+     them, because investors are not who Form D names. Across the whole sample,
+     ${fmt(st.entityOnly)} of ${fmt(st.sample)} filings name no human being at
+     all.`;
 
   // the same histogram twice: once for the operating companies, once for the
   // whole corpus, because the obvious objection is that the funds fill the gap
@@ -599,8 +601,12 @@ function renderReceipts() {
       dissemination index across ${fmt(st.popDays)} business days`],
     ["Sample", `${fmt(st.sample)} of them, drawn with seed ${st.seed}`],
     ["Sample rate", `${st.sampleRate}% of the quarter`],
-    ["Distinct issuers", `${fmt(st.issuers)}, after folding ${fmt(st.amendments)}
-      amendments onto the filing they amend`],
+    ["Distinct issuers", `${fmt(st.issuers)} distinct CIKs, after merging the
+      ${fmt(st.multiFilingIssuers)} issuers that filed twice inside the window.
+      ${fmt(st.amendments)} of the ${fmt(st.sample)} filings are amendments, and
+      ${fmt(st.amendOrigInSample)} of those amends another filing in the sample,
+      so for the ${fmt(st.multiFilingIssuers)} merged issuers the amounts shown are
+      the ones on their latest filing`],
     ["Pooled investment funds", `${fmt(st.funds)} (${st.fundPct}%)`],
     ["Operating companies", `${fmt(st.cos)} (${st.coPct}%)`],
     ["Names, all filings", `${fmt(st.allNames.distinct)} distinct,
@@ -651,36 +657,48 @@ function renderReceipts() {
 const sim = {
   n: 2000, seed: 20, vis: 3, w: 0.85, eff: 0.06, reach: 0.3, noise: 0.5, cohort: 0.25,
   series: [], last: null, flat: null, lock: null, lockFlat: null,
-  capLow: null, capHigh: null, busy: false, queued: null,
+  capLow: null, capHigh: null, capThin: null, capFat: null, capAmpLo: null, capAmpHi: null,
+  axis: null, runId: 0, busy: false, queued: null, dragging: false,
 };
 
-/* The model runs in a worker so a redraw never blocks the page. It answers in
-   two messages: the curve first, then the three extra numbers the prose quotes.
-   While a redraw is in flight, knob moves collapse into one queued run rather
-   than queueing a run each. */
+/* The model runs in a worker so a redraw never blocks the page, and it streams
+   the curve back while it is still computing, so the line grows under the
+   reader's hand rather than appearing once at the end. While a run is in flight,
+   knob moves collapse into one queued run instead of queueing a run each. The
+   six comparison numbers the prose quotes cost six more runs, so those are only
+   asked for once the reader stops moving things. */
 let worker = null;
 let runSeq = 0;
+let drawQueued = false;
 
 function startWorker() {
   if (worker) return worker;
   worker = new Worker("model-worker.js");
   worker.onmessage = e => {
     const d = e.data;
-    if (d.id !== runSeq) return;           // a newer run superseded this one
+    if (d.id !== runSeq) return;              // a newer run superseded this one
     if (d.stage === 1) {
+      if (d.id !== sim.runId) { sim.runId = d.id; sim.axis = null; }
+      sim.series = d.series;
+      scheduleDraw();
+    } else if (d.stage === 2) {
       sim.series = d.series;
       sim.last = d.last;
       sim.lock = d.lock;
-      drawSim();
+      scheduleDraw();
+      if (sim.queued) { const q = sim.queued; sim.queued = null; requestModel(q); }
+      else sim.busy = false;
     } else {
       sim.flat = d.flat;
       sim.lockFlat = d.lockFlat;
       sim.capLow = d.capLow;
       sim.capHigh = d.capHigh;
-      drawSim();
+      sim.capThin = d.capThin;
+      sim.capFat = d.capFat;
+      sim.capAmpLo = d.capAmpLo;
+      sim.capAmpHi = d.capAmpHi;
+      scheduleDraw();
     }
-    if (sim.queued) { const q = sim.queued; sim.queued = null; requestModel(q); }
-    else sim.busy = false;
   };
   worker.onerror = () => { sim.busy = false; };
   return worker;
@@ -689,12 +707,19 @@ function startWorker() {
 function requestModel(cfg) {
   const w = startWorker();
   sim.busy = true;
-  w.postMessage({ ...cfg, id: ++runSeq });
+  w.postMessage({ ...cfg, id: ++runSeq, quick: sim.dragging });
 }
 
 function runModel() {
   if (sim.busy) { sim.queued = { ...sim }; return; }
   requestModel({ ...sim });
+}
+
+/* One draw per frame no matter how many messages arrive inside it. */
+function scheduleDraw() {
+  if (drawQueued) return;
+  drawQueued = true;
+  requestAnimationFrame(() => { drawQueued = false; drawSim(); });
 }
 
 function drawSim() {
@@ -714,68 +739,94 @@ function drawSim() {
   const last = sim.last;
   const flat = sim.flat;
   const series = sim.series;
+  if (!series.length && !last) return;
 
+  /* The capture ratio is at its maximum at round zero, when the day-one cohort
+     holds everything, so the first point of a run is its peak. Pinning the axis
+     to that point means the line grows into a stable frame instead of rescaling
+     under itself on every streamed batch. It is computed once per run. */
+  const tMax = 999;
+  if (sim.axis == null && series.length) sim.axis = Math.max(2, Math.ceil(series[0][1] * 2) / 2);
+  if (flat) sim.axis = Math.max(sim.axis || 2, Math.ceil(flat.capture * 2) / 2);
+  const yMax = sim.axis || 4;
+
+  const iw = W - padL - padR, ih = H - padT - padB;
+  const yOf = v => padT + ih - (Math.max(0, Math.min(yMax, v)) / yMax) * ih;
+
+  ctx.font = "11px IBM Plex Mono, monospace";
+  for (let g = 0; g <= 4; g++) {
+    const v = (g / 4) * yMax;
+    const y = Math.round(yOf(v)) + 0.5;
+    const parity = Math.abs(v - 1) < 0.01;
+    ctx.strokeStyle = parity ? "#3d4a56" : "#232c36";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+    ctx.fillStyle = parity ? "#aab4bf" : "#7d8894";
+    ctx.textAlign = "right";
+    ctx.fillText(parity ? "1x" : v.toFixed(1) + "x", padL - 7, y + 4);
+  }
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#7d8894";
+  for (let g = 0; g <= 5; g++) {
+    const x = padL + (g / 5) * iw;
+    const label = g === 5 ? `${Math.round((g / 5) * tMax)} rounds`
+      : String(Math.round((g / 5) * tMax));
+    // the last tick carries a unit, so it is flush with the plot edge rather
+    // than centred on it, which would push it off the canvas
+    ctx.textAlign = g === 5 ? "right" : "center";
+    ctx.fillText(label, g === 5 ? W - padR : x, H - 10);
+  }
+
+  if (flat) {
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = "#6b7885";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(padL, yOf(flat.capture));
+    ctx.lineTo(W - padR, yOf(flat.capture));
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  if (series.length) {
+    ctx.strokeStyle = "#7fd1b4";
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    for (let i = 0; i < series.length; i++) {
+      const x = padL + (series[i][0] / tMax) * iw;
+      const y = yOf(series[i][1]);
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.stroke();
+    // the head of the line, so a run still in flight looks in flight
+    const head = series[series.length - 1];
+    if (!last || head[0] < tMax) {
+      ctx.fillStyle = "#7fd1b4";
+      ctx.beginPath();
+      ctx.arc(padL + (head[0] / tMax) * iw, yOf(head[1]), 2.6, 0, 6.284);
+      ctx.fill();
+    }
+  }
+
+  const headCap = last ? last.capture : (series.length ? series[series.length - 1][1] : null);
   $("#sim-legend").innerHTML = [
-    ["#7fd1b4", last ? `day-one cohort, ${last.capture.toFixed(2)}x its share` : "day-one cohort"],
+    ["#7fd1b4", headCap == null ? "day-one cohort" : `day-one cohort, ${headCap.toFixed(2)}x its share`],
     ["#6b7885", flat ? `all discovery, ${flat.capture.toFixed(2)}x` : "all discovery"],
   ].map(([col, l]) => `<span><i style="background:${col}"></i>${l}</span>`).join("");
   $("#sim-status").textContent = last
-    ? `${fmt(last.t)} rounds · ${fmt(last.visible)} visible` : "working";
-
-  if (last && series.length) {
-    const iw = W - padL - padR, ih = H - padT - padB;
-    const tMax = last.t || 1;
-    const peak = Math.max(2, last.capture, flat ? flat.capture : 0);
-    const yMax = Math.ceil(peak * 2) / 2;
-    const yOf = v => padT + ih - (Math.max(0, Math.min(yMax, v)) / yMax) * ih;
-
-    ctx.font = "11px IBM Plex Mono, monospace";
-    for (let g = 0; g <= 4; g++) {
-      const v = (g / 4) * yMax;
-      const y = Math.round(yOf(v)) + 0.5;
-      const parity = Math.abs(v - 1) < 0.01;
-      ctx.strokeStyle = parity ? "#3d4a56" : "#232c36";
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
-      ctx.fillStyle = parity ? "#aab4bf" : "#7d8894";
-      ctx.textAlign = "right";
-      ctx.fillText(parity ? "1x parity" : v.toFixed(1) + "x", padL - 7, y + 4);
-    }
-    ctx.textAlign = "center";
-    ctx.fillStyle = "#7d8894";
-    for (let g = 0; g <= 5; g++) {
-      const x = padL + (g / 5) * iw;
-      ctx.fillText(Math.round((g / 5) * tMax), x, H - 10);
-    }
-
-    const line = (pts, color, width, dash) => {
-      ctx.save();
-      if (dash) ctx.setLineDash([4, 4]);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = width;
-      ctx.beginPath();
-      for (let i = 0; i < pts.length; i++) {
-        const x = padL + (pts[i][0] / tMax) * iw;
-        const y = yOf(pts[i][1]);
-        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
-      }
-      ctx.stroke();
-      ctx.restore();
-    };
-    line(series, "#7fd1b4", 2.2, false);
-    // the control lands in stage 2; draw it as a straight line to where it ends
-    if (flat) line([[0, flat.capture], [tMax, flat.capture]], "#6b7885", 1.4, true);
-  }
+    ? `${fmt(last.t)} rounds · ${fmt(last.visible)} visible`
+    : "simulating";
 
   const cards = [
-    [last ? fmt(last.visible) : "…", "profiles visible after the run"],
-    [last ? last.capture.toFixed(2) + "x" : "…",
+    [last ? fmt(last.visible) : "\u2026", "profiles visible after the run"],
+    [last ? last.capture.toFixed(2) + "x" : "\u2026",
      "how much more reputation the day-one cohort holds than its share of the network"],
-    [flat ? flat.capture.toFixed(2) + "x" : "…",
+    [flat ? flat.capture.toFixed(2) + "x" : "\u2026",
      "the same, with every endorsement arriving through discovery"],
-    [sim.lock == null ? "…" : (sim.lock * 100).toFixed(0) + "%",
+    [sim.lock == null ? "\u2026" : (sim.lock * 100).toFixed(0) + "%",
      "of the top 1% after 20 rounds are still in the top 1% at the end"],
-    [sim.lockFlat == null ? "…" : (sim.lockFlat * 100).toFixed(0) + "%",
+    [sim.lockFlat == null ? "\u2026" : (sim.lockFlat * 100).toFixed(0) + "%",
      "the same, with every endorsement arriving through discovery"],
   ];
   $("#sim-readout").innerHTML = cards.map(([n, l], i) =>
@@ -785,9 +836,13 @@ function drawSim() {
 }
 
 function verdictHtml(last, flat) {
+  const x = v => (v == null ? "?" : v.toFixed(2) + "x");
   const cohortSize = Math.round(sim.cohort * sim.n);
-  const lock = sim.lock == null ? null : Math.round(sim.lock * 100);
-  const lockF = sim.lockFlat == null ? null : Math.round(sim.lockFlat * 100);
+  const lock = sim.lock == null ? null : (sim.lock * 100).toFixed(0) + "%";
+  const lockF = sim.lockFlat == null ? null : (sim.lockFlat * 100).toFixed(0) + "%";
+  const ampSpread = sim.capAmpLo != null && sim.capAmpHi != null
+    ? Math.abs(100 * (sim.capAmpHi - sim.capAmpLo) / sim.capAmpLo) : null;
+
   return `The people who were already credible when the doors opened are
     <span class="mono">${fmt(cohortSize)}</span> of <span class="mono">${fmt(sim.n)}</span>,
     or ${(sim.cohort * 100).toFixed(0)}% of the network. After
@@ -797,18 +852,22 @@ function verdictHtml(last, flat) {
     discovery instead of social proof and the same cohort lands at
     <b>${flat ? flat.capture.toFixed(2) : "?"}x</b>, which is parity, because with
     nothing compounding a head start is worth nothing.
-    ${lock === null || lockF === null ? "" : `Rank order is the other half of it. <b>${lock}%</b> of
-    the people in the top 1% after twenty rounds are still in the top 1% a
-    thousand rounds later; the all-discovery run gets ${lockF}%.`}
-    The visibility threshold is the number a product team argues about, and
-    moving it from one endorsement to twelve moves the capture ratio from
-    ${sim.capLow == null ? "?" : sim.capLow.toFixed(2) + "x"} to
-    ${sim.capHigh == null ? "?" : sim.capHigh.toFixed(2) + "x"} at everything
-    else held fixed, which is worth knowing before you pick a number. The dial
-    that decides
-    whether the first cohort compounds at all is the one nobody puts in a spec.
-    Cosign's public copy has already picked a value for it: <em class="term">make
-    discoveries before anyone else.</em>`;
+    ${lock === null || lockF === null ? "" : `Rank order is the other half of it.
+    <b>${lock}</b> of the people in the top 1% after twenty rounds are still in
+    the top 1% a thousand rounds later; the all-discovery run gets ${lockF}.`}
+
+    Which dial decides that is worth knowing before you pick a default, so the
+    page measures them rather than asserting them. At everything else held fixed,
+    moving how many people are already credible from 2% of the network to 60%
+    moves the capture ratio from ${x(sim.capThin)} to ${x(sim.capFat)}, which is
+    the largest effect on the panel. Moving the visibility threshold from one
+    endorsement to twelve moves it from ${x(sim.capLow)} to ${x(sim.capHigh)}.
+    The discovery share is the mechanism underneath both. And the knob that sounds
+    most like a product decision, "early endorsers get amplified", moves it from
+    ${x(sim.capAmpLo)} to ${x(sim.capAmpHi)}, a spread of about
+    ${ampSpread == null ? "?" : ampSpread.toFixed(0) + "%"}, which is to say almost
+    nothing. Cosign's public copy has picked a value for the dial that does
+    matter: <em class="term">make discoveries before anyone else.</em>`;
 }
 
 function wireSim() {
@@ -824,28 +883,39 @@ function wireSim() {
         : ["w", "eff", "reach", "noise"].includes(key) ? Number(sim[key]).toFixed(2)
         : fmt(el.value);
     };
-    el.addEventListener("input", () => {
-      readKnob();
-      clearTimeout(sim.t);
-      sim.t = setTimeout(runModel, 40);
-    });
+    // A range input fires `input` continuously while the thumb is held, so the
+    // curve redraws as it moves. While a drag is in progress the worker is told
+    // to skip the six comparison runs, which is the difference between a redraw
+    // costing about 30ms and about 250ms.
+    el.addEventListener("pointerdown", () => { sim.dragging = true; });
+    el.addEventListener("input", () => { readKnob(); runModel(); });
+    for (const done of ["pointerup", "pointercancel", "change", "blur"]) {
+      el.addEventListener(done, () => {
+        if (!sim.dragging) return;
+        sim.dragging = false;
+        runModel();          // one full run, with the comparison numbers
+      });
+    }
+    el.addEventListener("keydown", () => { sim.dragging = false; });
     readKnob();
   });
   $("#sim-run").addEventListener("click", () => {
     sim.seed = sim.seed >= 300 ? 1 : sim.seed + 1;
     $("#k-seed").value = sim.seed;
     $("#v-seed").textContent = sim.seed;
+    sim.dragging = false;
     runModel();
   });
   $("#sim-shuffle").addEventListener("click", () => {
     sim.seed = 1 + Math.floor(Math.random() * 400);
+    sim.dragging = false;
     runModel();
   });
   runModel();
 }
 
-/* ---------------------------------------------------------------- tip */
-
+/* Charts are sized from their container, so a width change means redrawing them.
+   The model does not need re-running, only its canvas does. */
 let redrawT = null;
 addEventListener("resize", () => {
   clearTimeout(redrawT);
@@ -913,29 +983,18 @@ function boot(DATA) {
 
   $("#fund-n").textContent = fmt(st.funds);
   $("#iss-n").textContent = fmt(st.issuers);
+  const nu = $("#nonus");
+  if (nu) nu.textContent = fmt(st.nonUsTotal);
   $("#s3 h2").textContent = "Two thirds of it is not startups";
 
   $("#graphtext").innerHTML =
     `Pull the named people out of those filings and draw an edge from each person
      to every company they were named on. That is the endorsement graph, minus
-     the endorsements, taken from the only machine-readable US record of who
-     stood behind a private company when it raised. Across the whole sample,
+     the endorsements, taken from the only structured US filing that names the
+     people behind a private company at the moment it raises. Across the whole sample,
      <span class="mono">${fmt(st.cos)}</span> operating-company filings name
      <span class="mono">${fmt(people.appearances)}</span> people in
      <span class="mono">${fmt(people.distinct)}</span> distinct names.`;
-
-  $("#graphverdict").innerHTML =
-    `It is almost entirely not there. Restricting to the
-     <span class="mono">${fmt(st.cos)}</span> operating-company filings,
-     <span class="mono">${fmt(co.distinct)}</span> distinct people are named and
-     <span class="mono">${co.oncePct}%</span> of them appear on exactly one
-     company, which makes them a dead end in any graph you build.
-     <span class="mono">${fmt(co.repeat)}</span> people are named on two or more,
-     and between them they add <span class="mono">${fmt(co.bridged)}</span> edges
-     to <span class="mono">${fmt(st.cos)}</span> companies. That is the entire
-     recorded social graph of who stood behind American startups this quarter:
-     ${fmt(co.repeat)} nodes, ${fmt(co.bridged)} edges, and no investors in it at
-     all, because investors are not who Form D names.`;
 
   renderFundSplit();
 }
