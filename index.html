@@ -48,13 +48,16 @@
           <h1>Who believed in you&nbsp;first?</h1>
           <p class="stand">Cosign went live on 25 September with a promise: a public
             record of who backed whom, kept by the people who did the backing.
-            The United States has been publishing its own version of that record,
-            in machine-readable form, every day since 2001. It is thinner than
-            the pitch, and the shape of the gap is the interesting part.</p>
+            The United States has been publishing its own version of that record
+            since 2001, and in machine-readable form since 2009. It is thinner
+            than the pitch, and the shape of the gap is the interesting part.</p>
           <p class="byline mono">Built from <span id="by-f">&#8230;</span> Form D filings pulled
-            straight off EDGAR, with no enrichment layer, no model and no
-            database. Every number on this page is computed from the filings in
-            the receipts at the bottom.</p>
+            straight off EDGAR and parsed by hand. No enrichment layer, no paid
+            database, and no language model anywhere in the data path. The model
+            in Item 6 is a model of a mechanism, not of this data. Every figure
+            here is recomputed from the filings by a second script that shares no
+            code with the one that wrote this page, and the two fail loudly when
+            they stop agreeing.</p>
         </div>
         <div id="hero-form"></div>
       </div>
@@ -62,8 +65,7 @@
 
     <!-- ============================================================ item 1 -->
     <section id="s1">
-      <p class="item-no">Item 1</p>
-      <h2>The pitch, in their words</h2>
+      <h2 class="with-no"><span class="item-no">Item 1</span><span>The pitch, in their words</span></h2>
       <p>Cosign is a curated professional network for people and companies in
         the startup ecosystem, published by Andreessen Horowitz and introduced
         by Erik Torenberg on 25 September 2026. MTS described the same day as
@@ -93,20 +95,31 @@
 
     <!-- ============================================================ item 2 -->
     <section id="s2">
-      <p class="item-no">Item 2</p>
-      <h2>The government already files it</h2>
-      <p>Rule 506 of Regulation D lets a US company sell shares to accredited
-        investors without registering them. The price of the exemption is a
-        notice, filed with the SEC before the first sale, called Form D. It asks
-        for the company's officers, directors and promoters by name. It asks
-        what industry it is in, what it is raising, how much it has sold, what
-        the securities are, which exemption is being used, and how many people
-        had already bought by the time it filed.</p>
-      <p>It is one of the densest documents American corporate law produces and
-        almost nobody opens. Here are five of them from the sample, unmodified,
-        so you can see what the same page looks like when the issuer is a
-        biotech, an insurer, a property vehicle and a fund. The rows with a warm
-        tint are the four fields that matter for this story.</p>
+      <h2 class="with-no"><span class="item-no">Item 2</span><span>The government already files it</span></h2>
+      <p>Rule 506 of Regulation D lets a US company sell securities without
+        registering them, as much as it likes, provided it meets one of two sets
+        of conditions. Under 506(b) it may not advertise, and it may sell to any
+        number of accredited investors plus up to 35 others who are financially
+        sophisticated. Under 506(c) it may advertise freely, provided every single
+        purchaser is accredited and the company takes reasonable steps to verify
+        it. <span class="src" href="https://www.sec.gov/answers/rule506.htm"
+        target="_blank" rel="noopener">investor.gov</span></p>
+      <p>The price of either exemption is a notice on Form D, filed with the SEC
+        no later than 15 days <em class="term">after</em> the first sale.
+        <span class="src" href="https://www.sec.gov/Archives/edgar/vprr/0201/02014640.pdf"
+        target="_blank" rel="noopener">the form says so on page one</span> That
+        timing is the whole of Item 5 in one sentence: by the time the form is
+        filed the money is already committed, and the form still records only
+        how many people were in, never who they were.</p>
+      <p>It asks for the company's officers, directors and promoters by name. It
+        asks what industry it is in, what it is raising, how much it has sold,
+        what the securities are, which exemption is being used, and how many
+        people had already bought by the time it filed. It is one of the denser
+        documents American corporate law produces and almost nobody opens. Here
+        are five of them from the sample, unmodified, so you can see what the
+        same page looks like when the issuer is a biotech, an insurer, a
+        property vehicle and a fund. The rows with a warm tint are the four
+        fields that matter for this story.</p>
 
       <div id="anatomy"></div>
 
@@ -127,8 +140,7 @@
 
     <!-- ============================================================ item 3 -->
     <section id="s3">
-      <p class="item-no">Item 3</p>
-      <h2>Two thirds of it is not startups</h2>
+      <h2 class="with-no"><span class="item-no">Item 3</span><span>Two thirds of it is not startups</span></h2>
       <p id="dir-intro">Loading the crawl.</p>
       <p>Form D is filed by anything selling securities under an exemption, which
         includes a great many things that are not companies trying to raise a seed
@@ -160,8 +172,8 @@
         </select>
         <button class="b" id="f-kind" aria-pressed="true">operating companies only</button>
         <button class="b" id="f-people" aria-pressed="false">named people only</button>
-        <span class="count" id="dir-count"></span>
       </div>
+      <div class="ctl-result mono" id="dir-count"></div>
 
       <div class="dirwrap">
         <div class="scroller">
@@ -187,52 +199,70 @@
 
     <!-- ============================================================ item 4 -->
     <section id="s4">
-      <p class="item-no">Item 4</p>
-      <h2>The graph you cannot build from it</h2>
+      <h2 class="with-no"><span class="item-no">Item 4</span><span>The graph you cannot build from it</span></h2>
       <p id="graphtext">Pull the named people out of those filings and draw an
         edge from each person to every company they were named on. That is the
         endorsement graph, minus the endorsements, taken from the only
         machine-readable US record of who stood behind a private company when it
         raised.</p>
-      <p id="graphverdict"></p>
-
-      <div class="readout mono" id="graph-readout"></div>
+      <p id="graphverdict" class="finding"></p>
 
       <div class="charts">
         <div class="chart">
-          <h4>How many companies each named person appears on</h4>
-          <p class="sub">Operating-company filings only</p>
+          <h4>How many issuers each named person appears on</h4>
           <svg class="bars" id="deg-chart" viewBox="0 0 420 200" role="img"
-               aria-label="Distribution of how many companies each named person appears on"></svg>
+               aria-label="Operating-company filings: distribution of how many companies each named person appears on"></svg>
           <p class="legend" id="deg-legend"></p>
         </div>
         <div class="chart">
-          <h4>Where the operating companies are</h4>
-          <p class="sub" id="state-sub"></p>
-          <svg class="bars" id="state-chart" viewBox="0 0 420 250" role="img"
-               aria-label="Operating company filings by issuer state"></svg>
+          <h4>The same, counting the funds as well</h4>
+          <svg class="bars" id="deg-all-chart" viewBox="0 0 420 200" role="img"
+               aria-label="All filings: distribution of how many issuers each named person appears on"></svg>
+          <p class="legend" id="deg-all-legend"></p>
         </div>
       </div>
 
       <h3>The people who do appear twice</h3>
-      <p>These are the only names in the sample that connect two filings. They
-        are almost all founders, which is what you would hope for, and the sample
-        of operating-company repeaters is short enough to read out loud, and the
+      <p>These are the only names in the sample that connect two filings, and on
+        the operating companies the list is short enough to read out loud. The
         table on the right is all of it. Across the whole corpus the only names
-        that recur on any scale are filing agents and fund administrators, listed
-        on the left. The government record of American startup capital is dense
-        with signature agents and empty of investors.</p>
+        that recur on any scale are administrative, and the filings themselves say
+        so: the top nine repeat names describe themselves as an agent of the
+        general partner, the general partner itself, an administrator, or an
+        officer of the issuer's administrator. Not one of the nine describes
+        themselves as an investor, because there is no box on the form for it.
+        The government record of American startup capital is dense with
+        signature agents and empty of investors.</p>
+      <p>Nor are the operating-company repeaters startup people. Counted by how
+        many of the repeat names sit in each industry, the ranking is on the
+        right. It leads with property, energy and unclassified vehicles, and
+        biotechnology only makes the top ten. These are the people who end up on
+        more than one board in the same quarter, and in a quarter of American
+        private capital that is a property and energy crowd rather than a
+        founder crowd.</p>
 
       <div class="charts">
         <div class="chart">
           <h4>Most frequent names anywhere in the sample</h4>
-          <p class="sub">All 1,500 filings, people and legal entities together</p>
           <svg class="bars" id="agent-chart" viewBox="0 0 420 260" role="img"
                aria-label="Most frequently named parties across the sample"></svg>
         </div>
         <div class="chart">
+          <h4>What the repeat names do</h4>
+          <div class="dirwrap" style="border:0;max-height:290px">
+            <div class="scroller">
+              <table class="dir">
+                <thead><tr>
+                  <th scope="col">industry the repeat name is named in</th>
+                  <th class="num" scope="col">names</th>
+                </tr></thead>
+                <tbody id="rep-ind"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="chart">
           <h4>Every repeat name on an operating company</h4>
-          <p class="sub">Roles are as the filings state them</p>
           <div class="dirwrap" style="max-height:290px;border:0">
             <div class="scroller">
               <table class="dir" id="rep-table">
@@ -252,13 +282,16 @@
 
     <!-- ============================================================ item 5 -->
     <section id="s5">
-      <p class="item-no">Item 5</p>
-      <h2>The one field that counts backers</h2>
+      <h2 class="with-no"><span class="item-no">Item 5</span><span>The one field that counts backers</span></h2>
       <p>Form D has a box, near the bottom, that asks for the total number of
         investors who had already invested in the offering by the time the
-        filing was made. Most issuers fill it in. The answers cluster the way
-        you would expect: a lot of rounds with one or two backers, a long thin
-        tail of funds buying a hundred small cheques.</p>
+        filing was made. Every operating company in the sample answers it. None
+        of them leaves it blank. The shape is not the one you would guess. A
+        quarter report a single backer, a third report eleven or more, and the
+        largest single band is three to five. This is not a tail of small
+        friends-and-family cheques. It is mostly small institutional rounds with
+        a handful of buyers each, which is the part of the market nobody has ever
+        felt the need for a directory.</p>
       <p>So the number of people who believed in a startup is on the public
         record, and who they were is not. The form will tell you the shape of a
         cap table at the granularity of a count, and nothing else. Cosign is
@@ -281,13 +314,12 @@
         </div>
       </div>
 
-      <div class="readout mono" id="blank-readout"></div>
+      <p id="blank-note" class="finding"></p>
     </section>
 
     <!-- ============================================================ item 6 -->
     <section id="s6">
-      <p class="item-no">Item 6</p>
-      <h2>What a reputation layer inherits</h2>
+      <h2 class="with-no"><span class="item-no">Item 6</span><span>What a reputation layer inherits</span></h2>
       <p>Everything above describes a record that mostly does not exist. The
         reasonable response from a product team is to build it, and to seed it
         with the people who are already credible, which is what a curated
@@ -356,8 +388,8 @@
                     role="img" aria-label="How the reputation held by the day-one cohort decays over rounds of endorsements, against a run where every endorsement arrives through discovery"></canvas>
             <div class="legend" id="sim-legend"></div>
             <div class="acts">
-              <button id="sim-run">run again</button>
-              <button id="sim-shuffle">reshuffle the day-one cohort</button>
+              <button id="sim-run">next seed</button>
+              <button id="sim-shuffle">random seed</button>
             </div>
             <p class="legend" style="color:var(--panel-dim);margin-top:10px">
               The solid line is the share of all accumulated reputation that
@@ -377,34 +409,30 @@
 
     <!-- ============================================================ item 7 -->
     <section id="s7">
-      <p class="item-no">Item 7</p>
-      <h2>Receipts</h2>
+      <h2 class="with-no"><span class="item-no">Item 7</span><span>Receipts</span></h2>
       <table class="kv" id="receipts"></table>
 
       <h3>What this leaves out</h3>
-      <p class="small">Form D covers US private placements under Regulation D
-        only. It misses Reg A, Reg CF, 506 offerings that were never amended,
-        every non-US issuer, every company that raised entirely on SAFEs or
-        internal rounds, and any deal where the notice was late or never filed.
-        SPVs and co-investment vehicles are filed as issuers in their own right,
-        which is why a large share of the corpus is funds filing under names
-        that look like startups. Related persons are matched on normalised
-        name, so a person who files as "J. Smith" in one place and "James
-        Smith" in another is two people here. All of that makes the sample
-        noisier than reality, not cleaner: the sparse graph in Item 4 is a
-        ceiling, not a floor.</p>
-
-      <h3>How to re-run it</h3>
-      <pre>python3 scripts/fetch_formd.py --start 20260701 --end 20260926 \
-  --sample 1500 --seed 20260926
-python3 scripts/build_drop.py
-python3 -m http.server 8000 --directory site</pre>
-      <p class="small">No dependencies, no build step. The crawl reads the
-        EDGAR daily dissemination index to get the population, draws a seeded
-        sample from it, then fetches and parses the structured
-        <span class="mono">primary_doc.xml</span> for each sampled filing.
-        Everything else in this page is derived in the browser from one JSON
-        file.</p>
+      <p class="small">Form D covers US private placements under Rule 504 and
+        Rule 506 of Regulation D. It misses Rule 504 offerings, Regulation A,
+        Regulation CF, every non-US issuer, every company that raised entirely on
+        SAFEs or internal rounds, and any offering where the notice was late or
+        never filed, which the SEC does enforce. Co-investment vehicles and SPVs
+        file as issuers in their own right, which is why two thirds of the corpus
+        is funds filing under names that read like product companies.</p>
+      <p class="small">Two things about the names. A person is counted once per
+        issuer, so an amendment that repeats a director has not put them on a
+        second company. Generational suffixes are stripped before matching, so
+        "Loeffler II" and "Loeffler" are the same person, which merges a father
+        and a son who share a name and therefore makes the repeater count larger,
+        not smaller. Telling a person from a legal entity is a judgement call, so
+        the rule is written out in the build script and applied identically by
+        the verification script. All of this makes the corpus noisier than
+        reality rather than cleaner, which means the sparse graph in Item 4 is a
+        ceiling and not a floor.</p>
+      <p class="small">Everything above is recomputed from the filings by a
+        second script that shares no code with the one that built this page, and
+        it fails loudly on any disagreement. The code is in the repository.</p>
     </section>
 
     <footer class="mono">

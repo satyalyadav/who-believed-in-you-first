@@ -228,9 +228,9 @@ function renderDir() {
 
   $("#dir-empty").hidden = rows.length > 0;
   const pool = dirState.kind === "co" ? D.stats.cos : D.stats.funds;
-  $("#dir-count").textContent = `${fmt(rows.length)} of ${fmt(pool)} ` +
-    (dirState.kind === "co" ? "operating companies" : "pooled investment funds") +
-    (rows.length > CAP ? ` · showing first ${CAP}` : "");
+  const noun = dirState.kind === "co" ? "operating companies" : "pooled investment funds";
+  $("#dir-count").textContent = `${fmt(rows.length)} of ${fmt(pool)} ${noun}` +
+    (rows.length > CAP ? `, showing the first ${CAP}` : "");
   $$("#dir-body th, .dirwrap th").forEach(() => {});
 
   if (dirState.person) {
@@ -471,31 +471,39 @@ function buildPersonIndex() {
 
 function renderGraph() {
   const st = D.stats;
-  const all = st.peopleNames;
   const co = st.coNames;
 
-  const cards = [
-    [fmt(co.distinct), "distinct people named on the " + fmt(st.cos) + " operating-company filings"],
-    [co.oncePct + "%", "of them are named on exactly one company"],
-    [fmt(co.repeat), "people are named on two or more, and those are the only edges in the graph"],
-    [fmt(co.bridged), "extra edges those repeaters add to " + fmt(st.cos) + " companies"],
-  ];
-  $("#graph-readout").innerHTML = cards.map(([n, l], i) =>
-    `<div><span class="n${i === 0 ? "" : " warn"}">${n}</span><span class="l">${l}</span></div>`).join("");
+  $("#graphverdict").innerHTML =
+    `It is almost entirely not there. Restricting to the
+     <span class="mono">${fmt(st.cos)}</span> operating-company filings,
+     <span class="mono">${fmt(co.distinct)}</span> distinct people are named and
+     <b>${co.oncePct}%</b> of them appear on exactly one company, which makes them
+     a dead end in any graph you build. That leaves
+     <span class="mono">${fmt(co.repeat)}</span> people who connect two filings
+     and <span class="mono">${fmt(co.bridged)}</span> edges between
+     <span class="mono">${fmt(st.cos)}</span> companies. The entire recorded social
+     graph of who stood behind an American startup this quarter is
+     <b>${fmt(co.repeat)} nodes and ${fmt(co.bridged)} edges</b>, and not one
+     investor is in it, because investors are not who Form D names. Across the
+     whole sample, ${fmt(st.entityOnly)} of ${fmt(st.sample)} filings name no human
+     being at all.`;
 
-  // how often a named person appears, operating companies only
-  const degs = new Map();
-  PERSON_IDX.co.forEach(e => degs.set(e.rows.length, (degs.get(e.rows.length) || 0) + 1));
-  const maxDeg = Math.min(6, Math.max(...degs.keys()));
-  const rows = [];
-  for (let d = 1; d <= maxDeg; d++) rows.push([d === 1 ? "1 company" : `${d} companies`, degs.get(d) || 0]);
-  const over = [...degs.entries()].filter(([d]) => d > maxDeg).reduce((a, [, v]) => a + v, 0);
-  if (over) rows.push([`${maxDeg + 1}+ companies`, over]);
-  hbars($("#deg-chart"), rows, { rowH: 24, padL: 104 });
-  const one = degs.get(1) || 0;
+  // the same histogram twice: once for the operating companies, once for the
+  // whole corpus, because the obvious objection is that the funds fill the gap
+  hbars($("#deg-chart"), st.degCo, { rowH: 24, padL: 104 });
+  const co1 = (st.degCo[0] || [])[1] || 0;
   $("#deg-legend").innerHTML =
-    `${fmt(one)} of the ${fmt(co.distinct)} people named sit on exactly one company ` +
-    `and connect to nothing. Everything below the first bar is the whole graph.`;
+    `${fmt(co1)} of the ${fmt(co.distinct)} people named on an operating company sit ` +
+    `on exactly one and connect to nothing. Everything under the first bar is the graph.`;
+
+  hbars($("#deg-all-chart"), st.degAll, { rowH: 24, padL: 104, color: "#7a848e" });
+  const all1 = (st.degAll[0] || [])[1] || 0;
+  const allTot = st.degAll.reduce((a, r) => a + r[1], 0);
+  const six = (st.degAll[st.degAll.length - 1] || [])[1] || 0;
+  $("#deg-all-legend").innerHTML =
+    `Add the ${fmt(st.funds)} fund filings and the shape barely moves: ${fmt(all1)} of ` +
+    `${fmt(allTot)} people still appear once, and only ${fmt(six)} appear on six or more. ` +
+    `The funds do not add edges. They add administrators.`;
 
   // who repeats, and in what capacity
   const rep = D.repeatsCo.slice(0, 220);
@@ -507,6 +515,12 @@ function renderGraph() {
     </tr>`).join("")
     || `<tr><td colspan="4" class="empty">No person is named on two operating companies in this sample.</td></tr>`;
   wirePersons($("#rep-body"));
+
+  // what the repeaters actually do, read off the filings rather than asserted
+  const ind = st.repeatInd || [];
+  $("#rep-ind").innerHTML = ind.map(([k, v]) =>
+    `<tr><td>${esc(k)}</td><td class="num">${fmt(v)}</td></tr>`).join("")
+    || `<tr><td colspan="2" class="empty">no repeat names in the sample</td></tr>`;
 
   const top = D.repeats.slice(0, 12);
   const el = $("#agent-chart");
@@ -525,8 +539,6 @@ function renderGraph() {
         fill="#7c8794">${r.d}, as ${esc(role)}</text>`;
   }).join("");
 
-  hbars($("#state-chart"), st.byState.slice(0, 12).map(([k, v]) => [k, v]), { rowH: 19 });
-  $("#state-sub").textContent = "Operating-company filings by issuer state, the twelve that file most";
 }
 
 function renderFundSplit() {
@@ -555,14 +567,14 @@ function renderBlank() {
   $("#ninv-sub").textContent =
     `${fmt(co.reporting)} of ${fmt(co.n)} operating-company filings filled in the box`;
 
-  const cards = [
-    [fmt(co.medianBackers), "median backers already in, at the moment of filing"],
-    [bytes(co.checkMedian), "median reported amount sold per reported backer"],
-    [co.checkGini, "Gini of that implied cheque. Zero would be every backer writing the same amount"],
-    [fmt(st.entityOnly), "filings in the sample that name no human being at all"],
-  ];
-  $("#blank-readout").innerHTML = cards.map(([n, l], i) =>
-    `<div><span class="n${i === 3 ? " warn" : ""}">${n}</span><span class="l">${l}</span></div>`).join("");
+  $("#blank-note").innerHTML =
+    `Every one of the ${fmt(co.n)} operating-company filings answers the box. The
+     median is <b>${fmt(co.medianBackers)} backers</b> and the implied cheque is
+     <b>${bytes(co.checkMedian)}</b>, with a Gini of ${co.checkGini}. Take the
+     <span class="mono">${fmt(co.maxBackers)}</span> that COIZO LTD reported and
+     the <span class="mono">$5.3bn</span> that Pruco Life Insurance reported to
+     eleven, and the field turns out to be measuring captive finance portfolios
+     and insurer balance sheets as much as it is measuring venture rounds.`;
 
   const w = co.checkGini;
   const word = w > 0.85 ? "That is close to one person writing the round."
@@ -602,15 +614,31 @@ function renderReceipts() {
       ${st.coNames.oncePct}% appear once,
       ${fmt(st.coNames.repeat)} repeaters adding ${fmt(st.coNames.bridged)} edges`],
     ["Filings naming no human", fmt(st.entityOnly)],
-    ["Backer counts, operating cos", `${fmt(co.reporting)} of ${fmt(co.n)} filings
-      report an investor count (${co.reportingPct}%). Median ${fmt(co.medianBackers)},
-      median implied cheque ${bytes(co.checkMedian)}, Gini ${co.checkGini}`],
+    ["Backer counts, operating cos", `${fmt(co.reporting)} of ${fmt(co.n)} report
+      at least one backer, none leave the field blank, and the rest report zero,
+      which on this form means the first sale had not happened yet. Median
+      ${fmt(co.medianBackers)} backers, median implied cheque
+      ${bytes(co.checkMedian)}, Gini ${co.checkGini}`],
     ["Rule 506(c)", `${fmt(st.rule506cCo)} of ${fmt(st.cos)} operating-company
       filings, ${fmt(st.rule506c)} of ${fmt(st.issuers)} in total`],
     ["Retrieved", today],
+    ["Filing deadline", `Form D is due no later than 15 days after the first
+      sale, not before it. See the form itself:
+      <a class="src" href="https://www.sec.gov/Archives/edgar/vprr/0201/02014640.pdf"
+      target="_blank" rel="noopener">sec.gov</a>`],
+    ["Rule 506", `506(b): no general solicitation, unlimited accredited plus up to
+      35 sophisticated non-accredited. 506(c): general solicitation allowed, all
+      purchasers accredited and verified.
+      <a class="src" href="https://www.sec.gov/answers/rule506.htm"
+      target="_blank" rel="noopener">investor.gov</a>`],
     ["Source", `SEC EDGAR <span class="mono">primary_doc.xml</span> for every
-      accession, parsed directly. No third-party enrichment, no model, no
-      database, no paid data`],
+      accession, parsed directly. No third-party enrichment, no paid data, and no
+      language model anywhere in the data path`],
+    ["Verification", `every figure on this page is recomputed from
+      <span class="mono">data/formd.jsonl</span> by a second script that shares
+      no code with the one that wrote this file, and the two fail loudly on any
+      disagreement. The entity test, which decides the headline numbers, is
+      stated in that script rather than left to a regex`],
     ["cosign copy", `cosign.co and the a16z and Erik Torenberg launch posts,
       retrieved ${today}`],
   ];
@@ -622,212 +650,138 @@ function renderReceipts() {
 
 const sim = {
   n: 2000, seed: 20, vis: 3, w: 0.85, eff: 0.06, reach: 0.3, noise: 0.5, cohort: 0.25,
-  steps: [], done: false,
+  series: [], last: null, flat: null, lock: null, lockFlat: null,
+  capLow: null, capHigh: null, busy: false, queued: null,
 };
 
-function runModel() {
-  sim.steps = simulate(sim);
-  sim.stepsFlat = simulate({ ...sim, reach: 1, seed: sim.seed + 7919 });
-  sim.lock = sim.steps.lockIn;
-  sim.lockFlat = sim.stepsFlat.lockIn;
-  // the threshold is the dial product teams argue about, so measure it rather
-  // than assert it
-  const lastOf = st => (st.length ? st[st.length - 1].capture : null);
-  sim.capLow = lastOf(simulate({ ...sim, vis: 1 }));
-  sim.capHigh = lastOf(simulate({ ...sim, vis: 12 }));
-  sim.done = true;
-  drawSim();
-}
+/* The model runs in a worker so a redraw never blocks the page. It answers in
+   two messages: the curve first, then the three extra numbers the prose quotes.
+   While a redraw is in flight, knob moves collapse into one queued run rather
+   than queueing a run each. */
+let worker = null;
+let runSeq = 0;
 
-function simulate(cfg) {
-  const { n, seed, vis, w, eff, reach, noise, cohort } = cfg;
-  const rnd = mulberry32((0x9e3779b9 ^ Math.imul(Math.round(seed * 2654435761), 2654435761)) >>> 0);
-  const rep = new Float64Array(n);
-  const nend = new Float64Array(n);
-  const quality = new Float64Array(n);
-  const amp = new Float64Array(n).fill(1);
-  const firstDay = new Uint8Array(n);
-  for (let i = 0; i < n; i++) quality[i] = rnd();
-  // the first arrivals are drawn at random, not on quality
-  for (let i = 0; i < Math.min(seed, n); i++) amp[i] = 0.35 + rnd() * 0.65;
-  // whatever is already credible when the doors open
-  for (let i = 0; i < n; i++) {
-    if (rnd() < cohort) { nend[i] = vis; firstDay[i] = 1; }
-  }
-
-  const series = [];
-  let top20 = null;
-  for (let t = 0; t < 1000; t++) {
-    const active = [];
-    for (let i = 0; i < n; i++) if (nend[i] >= vis) active.push(i);
-    if (active.length < 3) break;
-
-    for (let e = 0; e < n * eff; e++) {
-      // the endorser is somebody who can already see the network
-      const endorser = active[(rnd() * active.length) | 0];
-
-      // where an endorsement comes from decides everything. A share of the flow
-      // is discovery: you get looked at because somebody is browsing. The rest is
-      // social proof: you get looked at because you already look worth looking at.
-      let target;
-      if (rnd() < reach) {
-        target = (rnd() * n) | 0;
-      } else {
-        // nobody reads the whole list, you glance at a handful of names
-        let best = active[(rnd() * active.length) | 0];
-        for (let k = 0; k < 5; k++) {
-          const c = active[(rnd() * active.length) | 0];
-          if (rep[c] > rep[best]) best = c;
-        }
-        target = best;
-      }
-
-      const sawTheRealThing = rnd() >= noise;
-      const hit = sawTheRealThing ? rnd() < quality[target] : rnd() < 0.33;
-      const weight = (1 - w + w * Math.min(4, rep[endorser] * 0.5)) * amp[endorser];
-      if (hit) rep[target] += weight;
-      else nend[target] += weight * 0.2;
+function startWorker() {
+  if (worker) return worker;
+  worker = new Worker("model-worker.js");
+  worker.onmessage = e => {
+    const d = e.data;
+    if (d.id !== runSeq) return;           // a newer run superseded this one
+    if (d.stage === 1) {
+      sim.series = d.series;
+      sim.last = d.last;
+      sim.lock = d.lock;
+      drawSim();
+    } else {
+      sim.flat = d.flat;
+      sim.lockFlat = d.lockFlat;
+      sim.capLow = d.capLow;
+      sim.capHigh = d.capHigh;
+      drawSim();
     }
-    if (t === 19) top20 = topOf(rep, nend, vis, n, 0.01);
-    if (t % 5 === 0 || t === 999) series.push(snapshot(t, rep, nend, vis, n, firstDay));
-  }
-  const end = topOf(rep, nend, vis, n, 0.01);
-  const k = top20.length;
-  series.lockIn = k ? end.filter(i => top20.includes(i)).length / k : null;
-  return series;
-}
-
-function topOf(rep, nend, vis, n, frac) {
-  const idx = [];
-  for (let i = 0; i < n; i++) if (nend[i] >= vis) idx.push(i);
-  idx.sort((a, b) => (rep[b] + nend[b] * 0.01) - (rep[a] + nend[a] * 0.01));
-  return idx.slice(0, Math.max(1, Math.round(idx.length * frac)));
-}
-
-function snapshot(t, rep, nend, vis, n, firstDay) {
-  const visCount = new Float64Array(n);
-  for (let i = 0; i < n; i++) if (nend[i] >= vis) visCount[i] = rep[i] + nend[i] * 0.01;
-  const sorted = [...visCount].filter(v => v > 0).sort((a, b) => b - a);
-  const total = sorted.reduce((a, b) => a + b, 0);
-  const at = f => {
-    let c = 0;
-    for (let i = 0; i < sorted.length; i++) { c += sorted[i]; if (c / total >= f) return i + 1; }
-    return sorted.length;
+    if (sim.queued) { const q = sim.queued; sim.queued = null; requestModel(q); }
+    else sim.busy = false;
   };
-  const share = k => (sorted.length && total ? sorted.slice(0, k).reduce((a, b) => a + b, 0) / total : 0);
-  // what share of everything accumulated belongs to the people who were already
-  // visible on the day the network opened, and how that compares with the share
-  // of the network they were to begin with. 1.0 is parity.
-  let cohortRep = 0;
-  for (let i = 0; i < n; i++) if (firstDay[i] && nend[i] >= vis) cohortRep += rep[i] + nend[i] * 0.01;
-  const cohortN = firstDay.reduce((a, b) => a + b, 0) || 1;
-  return {
-    t,
-    visible: sorted.length,
-    share: sorted.length ? sorted[0] / total : 0,
-    p50: at(0.5),
-    p90: at(0.9),
-    top1share: share(Math.max(1, Math.round(sorted.length * 0.01))),
-    top10share: share(Math.max(1, Math.round(sorted.length * 0.1))),
-    cohortShare: total ? cohortRep / total : 0,
-    capture: total && cohortN ? (cohortRep / total) / (cohortN / n) : 0,
-    gini: giniOf(sorted, total),
-  };
+  worker.onerror = () => { sim.busy = false; };
+  return worker;
 }
 
-function giniOf(sortedDesc, total) {
-  const n = sortedDesc.length;
-  if (!n || !total) return 0;
-  let cum = 0;
-  for (let i = 0; i < n; i++) cum += (i + 1) * sortedDesc[n - 1 - i];
-  return (2 * cum) / (n * total) - (n + 1) / n;
+function requestModel(cfg) {
+  const w = startWorker();
+  sim.busy = true;
+  w.postMessage({ ...cfg, id: ++runSeq });
 }
 
-function mulberry32(a) {
-  return function () {
-    a |= 0; a = (a + 0x6D2B79F5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+function runModel() {
+  if (sim.busy) { sim.queued = { ...sim }; return; }
+  requestModel({ ...sim });
 }
 
 function drawSim() {
   const c = $("#sim-canvas");
+  if (!c) return;
   const host = c.parentElement;
-  const W = Math.max(420, Math.round(host.getBoundingClientRect().width));
+  const W = Math.max(320, Math.min(1100, Math.round(host.getBoundingClientRect().width)));
   const H = 340;
   if (c.width !== W) c.width = W;
-  c.height = H;
+  if (c.height !== H) c.height = H;
   const ctx = c.getContext("2d");
   const padL = 46, padR = 16, padT = 16, padB = 30;
   ctx.clearRect(0, 0, W, H);
   ctx.fillStyle = "#10151b";
   ctx.fillRect(0, 0, W, H);
-  if (!sim.steps.length) return;
 
-  const iw = W - padL - padR, ih = H - padT - padB;
-  const tMax = sim.steps[sim.steps.length - 1].t || 1;
-  const peak = Math.max(2, ...sim.steps.map(s => s.capture), ...sim.stepsFlat.map(s => s.capture));
-  const yMax = Math.ceil(peak * 2) / 2;
+  const last = sim.last;
+  const flat = sim.flat;
+  const series = sim.series;
 
-  const yOf = v => padT + ih - (Math.max(0, Math.min(yMax, v)) / yMax) * ih;
-
-  ctx.font = "11px IBM Plex Mono, monospace";
-  for (let g = 0; g <= 4; g++) {
-    const v = (g / 4) * yMax;
-    const y = Math.round(yOf(v)) + 0.5;
-    ctx.strokeStyle = Math.abs(v - 1) < 0.01 ? "#3d4a56" : "#232c36";
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
-    ctx.fillStyle = Math.abs(v - 1) < 0.01 ? "#aab4bf" : "#7d8894";
-    ctx.textAlign = "right";
-    ctx.fillText(v === 1 ? "1x parity" : v.toFixed(1) + "x", padL - 7, y + 4);
-  }
-  ctx.textAlign = "center";
-  ctx.fillStyle = "#7d8894";
-  for (let g = 0; g <= 5; g++) {
-    const x = padL + (g / 5) * iw;
-    ctx.fillText(Math.round((g / 5) * tMax), x, H - 10);
-  }
-
-  const path = (key, steps) => {
-    ctx.beginPath();
-    steps.forEach((s, i) => {
-      const x = padL + (s.t / tMax) * iw;
-      i ? ctx.lineTo(x, yOf(s[key])) : ctx.moveTo(x, yOf(s[key]));
-    });
-    ctx.stroke();
-  };
-
-  ctx.strokeStyle = "#7fd1b4"; ctx.lineWidth = 2.2; path("capture", sim.steps);
-  if (sim.stepsFlat.length) {
-    ctx.save(); ctx.setLineDash([4, 4]);
-    ctx.strokeStyle = "#6b7885"; ctx.lineWidth = 1.4; path("capture", sim.stepsFlat);
-    ctx.restore();
-  }
-
-  const last = sim.steps[sim.steps.length - 1];
-  const flat = sim.stepsFlat[sim.stepsFlat.length - 1];
   $("#sim-legend").innerHTML = [
-    ["#7fd1b4", `day-one cohort, ${(last.capture).toFixed(2)}x its share`],
-    ["#6b7885", `all discovery, ${flat ? flat.capture.toFixed(2) : "-"}x`],
+    ["#7fd1b4", last ? `day-one cohort, ${last.capture.toFixed(2)}x its share` : "day-one cohort"],
+    ["#6b7885", flat ? `all discovery, ${flat.capture.toFixed(2)}x` : "all discovery"],
   ].map(([col, l]) => `<span><i style="background:${col}"></i>${l}</span>`).join("");
-  $("#sim-status").textContent = `${fmt(last.t)} rounds · ${fmt(last.visible)} visible`;
+  $("#sim-status").textContent = last
+    ? `${fmt(last.t)} rounds · ${fmt(last.visible)} visible` : "working";
+
+  if (last && series.length) {
+    const iw = W - padL - padR, ih = H - padT - padB;
+    const tMax = last.t || 1;
+    const peak = Math.max(2, last.capture, flat ? flat.capture : 0);
+    const yMax = Math.ceil(peak * 2) / 2;
+    const yOf = v => padT + ih - (Math.max(0, Math.min(yMax, v)) / yMax) * ih;
+
+    ctx.font = "11px IBM Plex Mono, monospace";
+    for (let g = 0; g <= 4; g++) {
+      const v = (g / 4) * yMax;
+      const y = Math.round(yOf(v)) + 0.5;
+      const parity = Math.abs(v - 1) < 0.01;
+      ctx.strokeStyle = parity ? "#3d4a56" : "#232c36";
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+      ctx.fillStyle = parity ? "#aab4bf" : "#7d8894";
+      ctx.textAlign = "right";
+      ctx.fillText(parity ? "1x parity" : v.toFixed(1) + "x", padL - 7, y + 4);
+    }
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#7d8894";
+    for (let g = 0; g <= 5; g++) {
+      const x = padL + (g / 5) * iw;
+      ctx.fillText(Math.round((g / 5) * tMax), x, H - 10);
+    }
+
+    const line = (pts, color, width, dash) => {
+      ctx.save();
+      if (dash) ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      for (let i = 0; i < pts.length; i++) {
+        const x = padL + (pts[i][0] / tMax) * iw;
+        const y = yOf(pts[i][1]);
+        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    };
+    line(series, "#7fd1b4", 2.2, false);
+    // the control lands in stage 2; draw it as a straight line to where it ends
+    if (flat) line([[0, flat.capture], [tMax, flat.capture]], "#6b7885", 1.4, true);
+  }
 
   const cards = [
-    [fmt(last.visible), "profiles visible after " + fmt(last.t) + " rounds"],
-    [last.capture.toFixed(2) + "x", "how much more reputation the day-one cohort holds than its share of the network"],
-    [flat ? flat.capture.toFixed(2) + "x" : "—", "the same, with every endorsement arriving through discovery"],
-    [sim.lock == null ? "—" : (sim.lock * 100).toFixed(0) + "%",
+    [last ? fmt(last.visible) : "…", "profiles visible after the run"],
+    [last ? last.capture.toFixed(2) + "x" : "…",
+     "how much more reputation the day-one cohort holds than its share of the network"],
+    [flat ? flat.capture.toFixed(2) + "x" : "…",
+     "the same, with every endorsement arriving through discovery"],
+    [sim.lock == null ? "…" : (sim.lock * 100).toFixed(0) + "%",
      "of the top 1% after 20 rounds are still in the top 1% at the end"],
-    [sim.lockFlat == null ? "—" : (sim.lockFlat * 100).toFixed(0) + "%",
+    [sim.lockFlat == null ? "…" : (sim.lockFlat * 100).toFixed(0) + "%",
      "the same, with every endorsement arriving through discovery"],
   ];
   $("#sim-readout").innerHTML = cards.map(([n, l], i) =>
     `<div><span class="n${i === 0 ? "" : " warn"}">${n}</span><span class="l">${l}</span></div>`).join("");
 
-  $("#sim-verdict").innerHTML = verdictHtml(last, flat);
+  if (last && flat) $("#sim-verdict").innerHTML = verdictHtml(last, flat);
 }
 
 function verdictHtml(last, flat) {
@@ -873,11 +827,16 @@ function wireSim() {
     el.addEventListener("input", () => {
       readKnob();
       clearTimeout(sim.t);
-      sim.t = setTimeout(runModel, 160);
+      sim.t = setTimeout(runModel, 40);
     });
     readKnob();
   });
-  $("#sim-run").addEventListener("click", () => { sim.seed += 1; $("#k-seed").value = Math.min(sim.seed, 300); $("#v-seed").textContent = Math.min(sim.seed, 300); runModel(); });
+  $("#sim-run").addEventListener("click", () => {
+    sim.seed = sim.seed >= 300 ? 1 : sim.seed + 1;
+    $("#k-seed").value = sim.seed;
+    $("#v-seed").textContent = sim.seed;
+    runModel();
+  });
   $("#sim-shuffle").addEventListener("click", () => {
     sim.seed = 1 + Math.floor(Math.random() * 400);
     runModel();
@@ -895,7 +854,7 @@ addEventListener("resize", () => {
     renderGraph();
     renderFundSplit();
     renderBlank();
-    if (sim.done) drawSim();
+    if (sim.last) drawSim();
   }, 200);
 });
 
