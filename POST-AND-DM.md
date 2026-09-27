@@ -29,20 +29,21 @@ action on someone else's account, so I will not touch it until you say so.
 > I pulled 1,500 of the 15,282 Form D filings made in Q3 2026 and read them.
 >
 > Two thirds of them are pooled investment funds rather than startups. Of the
-> 484 that are operating companies, they name 1,251 distinct people and 97.52%
-> of those appear on exactly one company. 31 people appear on two or more. So the
-> whole vouching graph is 31 nodes and 38 edges, with no investors in it at all,
+> 484 that are operating companies, they name 1,504 distinct people and 97.61%
+> of those appear on exactly one company. 36 people appear on two or more. So the
+> whole vouching graph is 36 nodes and 44 edges, with no investors in it at all,
 > because investors are not who Form D names.
 >
-> The names that do recur across the quarter are filing agents. One
-> administrative services company signs as director on behalf of 75 separate
-> vehicles. Another shows up 75 times. Another 35.
+> The names that do recur are administrative, and the filings say so themselves:
+> the top nine describe themselves as an agent of the general partner, the
+> general partner, an administrator, or an officer of the issuer's
+> administrator. Two of them appear on 75 separate vehicles each.
 >
 > The one field that counts backers asks for a number and no names. 404 of those
-> 484 filings fill it in. Median seven backers, median cheque $206,250, Gini
-> 0.903. You can measure the shape of a cap table from public filings without
-> learning a single investor's name. That is a strange thing to be true, and it
-> is a very real gap.
+> 484 filings report at least one, none leave it blank, the median is seven
+> backers, the median implied cheque is $206,250, and the Gini is 0.903. You can
+> measure the shape of a cap table from public filings without learning a single
+> investor's name. That is a strange thing to be true, and it is a very real gap.
 >
 > So I modelled the mechanism cosign describes: attributed, durable endorsements,
 > a visibility threshold, reputation weighting, early endorsers rewarded with
@@ -69,8 +70,8 @@ action on someone else's account, so I will not touch it until you say so.
 > US version of that, filed daily, machine readable, free since 2001: Form D.
 >
 > I pulled 1,500 of the 15,282 made in Q3 2026. Two thirds are funds, not
-> startups. Of the 484 that are companies, they name 1,251 people and 97.52% of
-> them appear on exactly one company. The whole vouching graph is 31 nodes, 38
+> startups. Of the 484 that are companies, they name 1,504 people and 97.61% of
+> them appear on exactly one company. The whole vouching graph is 36 nodes, 44
 > edges, no investors.
 >
 > The names that recur are filing agents. The one field that counts backers asks
@@ -118,6 +119,8 @@ action on someone else's account, so I will not touch it until you say so.
   by name and because the failures are the credible part.
 - The DM ends by asking for a fight rather than a compliment, and offers a
   specific next step. He said he would at minimum respond.
-- Every number in both drafts is read off the receipts table in `build_drop.py`,
-  so they cannot drift from the crawl. Re-check them if the crawl is re-run with
-  a different seed.
+- Every number in both drafts is read off the receipts table, which
+  `scripts/verify.py` recomputes from the raw crawl with a second implementation
+  that shares no code. Re-run that script if the crawl changes.
+- Item 6 is being rewritten, so the model paragraph in both drafts will need a
+  matching pass before anything is sent.

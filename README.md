@@ -6,11 +6,11 @@ An interactive drop built from SEC Form D filings, published in answer to
 The claim under test is on cosign's own homepage: profiles are "cosigned by the
 people who believe in them," built from "attributable context from people who
 have worked together." The United States has been publishing its own version of
-that record in machine-readable form since 2001, in Form D, and it turns out to
-be mostly empty. Across 484 operating-company filings, 1,251 distinct people are
-named and 97.52% of them appear on exactly one company. The whole recorded graph
-of who stood behind American startups in a quarter is 31 nodes and 38 edges, and
-not one investor is in it.
+that record, in Form D, and it turns out to be mostly empty. Across 484
+operating-company filings, 1,504 distinct people are named and 97.61% of them
+appear on exactly one company. The whole recorded graph of who stood behind
+American startups in a quarter is 36 nodes and 44 edges, and not one investor is
+in it.
 
 ## Run it
 
@@ -34,6 +34,8 @@ specific failure described in [TRANSCRIPT.md](TRANSCRIPT.md).
 | `scripts/supervise.py` | runs the crawler under a wall clock so a stalled socket cannot wedge it |
 | `scripts/run_when_allowed.py` | probes for a 200 before starting, and backs off exponentially on 429 |
 | `scripts/build_drop.py` | folds amendments onto their originals, separates funds from operating companies, resolves names, and writes `site/drop.json` |
+| `scripts/verify.py` | recomputes every figure on the page from the raw crawl with a second implementation that shares no code, and fails loudly on disagreement |
+| `scripts/check-model.mjs` | checks the endorsement model against a naive reference implementation across the parameter space |
 | `site/index.html` | the page |
 | `site/app.js` | directory, charts, and the endorsement model |
 | `site/style.css` | the design system |
@@ -59,19 +61,24 @@ is the number quoted throughout the page.
 | Distinct issuers after folding amendments | 1,487 |
 | Pooled investment funds | 1,003 (67.45%) |
 | Operating companies | 484 (32.55%) |
-| Distinct people named on operating-company filings | 1,251 |
-| Of those, appearing on exactly one company | 97.52% |
-| People appearing on two or more | 31, adding 38 edges |
-| Filings that name no human being | 335 |
-| Operating-company filings reporting an investor count | 404 of 484 |
+| Distinct people named on operating-company filings | 1,504 |
+| Of those, appearing on exactly one company | 97.61% |
+| People appearing on two or more | 36, adding 44 edges |
+| Filings that name no human being | 196 of 1,500 |
+| Operating-company filings reporting at least one backer | 404 of 484, none blank |
 | Median implied cheque, sold divided by backers | $206,250 |
 | Gini of that implied cheque | 0.903 |
 
 ## Caveats
 
-Form D covers US private placements under Regulation D only. It misses Reg A,
-Reg CF, non-US issuers, anything raised entirely on SAFEs or internal rounds, and
-any deal where the notice was late or never filed. Related persons are matched on
-normalised name, so a person filing as "J. Smith" in one place and "James Smith"
-in another counts as two. All of that makes the corpus noisier than reality
-rather than cleaner, which means the sparse graph is a ceiling and not a floor.
+Form D covers US private placements under Rule 504 and Rule 506 of Regulation D.
+It misses Regulation A, Regulation CF, non-US issuers, anything raised entirely
+on SAFEs or internal rounds, and any offering where the notice was late or never
+filed, which the SEC does enforce. Related persons are matched on normalised
+name with generational suffixes stripped, so "J. Smith" in one place and
+"James Smith" in another are one person, and so are a father and a son who share
+a name, which makes the repeater count larger rather than smaller. Telling a
+person from a legal entity is a judgement call, so the rule is written out in
+both scripts rather than left to a regex, and the two are required to agree. All
+of that makes the corpus noisier than reality rather than cleaner, which means
+the sparse graph is a ceiling and not a floor.

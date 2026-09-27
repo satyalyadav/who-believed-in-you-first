@@ -19,35 +19,78 @@ ACCESSIONS = os.path.join(ROOT, "data", "accessions.json")
 WINDOW = ("20260701", "20260926")
 SAMPLE_SEED = 20260926
 
-ENTITY_TAIL = re.compile(
-    r"(llc|l l c|l p|lp|llp|inc|corp|corporation|co|company|partners|partnership|"
-    r"holdings|holding|group|ventures|venture|capital|fund|trust|estate|family|"
-    r"office|advisors|advisory|management|investments|investment|asset|assets|"
-    r"series|spv|limited|association|gmbh|sa r l|sarl|plc|ab|as|oy|ag|bv|nv|"
-    r"university|church|ministries|foundation|school|church)",
-    re.I,
-)
-SUFFIX = re.compile(r"\b(jr|sr|ii|iii|iv|v|phd|md|mba|cpa|jd|esq)\b", re.I)
+# The single largest slice of Form D. Anything filed under this industry group is
+# an asset manager or a fund vehicle rather than an operating company, and the
+# page reports the corpus both ways because the two stories are different.
 FUND = "Pooled Investment Fund"
+
+# A related person on Form D is often a legal entity, and telling those two apart
+# decides the headline numbers, so the rule is written down rather than
+# improvised. Five tests, in order:
+#
+#   1. nothing usable, or a placeholder such as "n/a", is not a person
+#   2. an unambiguous legal form anywhere in the name, whole word, is not a person
+#      (llc, inc, lp, gmbh and so on; these cannot be surnames)
+#   3. an ambiguous short form only counts at the end of the name, or as the last
+#      two words joined, because "sa" and "as" are surnames and "l p" is a
+#      suffix that normalises into two tokens
+#   4. an organisation word used as a whole word is not a person
+#   5. anything else is a person
+#
+# Word boundaries are not optional. An earlier version had none, which quietly
+# filed "Salene Hitchcock-Gear" as a company because "hitchcock" contains "co",
+# and "Reshma Abraham" likewise on "ab". It moved 1,251 names to 1,508 and the
+# repeater count from 31 to 36. The all-caps test that used to be rule 5 never
+# fired on this corpus and has been dropped rather than left to misfire on the
+# next one.
+# Generational and honorific suffixes, dropped before matching so that
+# "Loeffler II" and "Loeffler" are the same person.
+SUFFIX = re.compile(r"\b(jr|sr|ii|iii|iv|phd|md|mba|cpa|jd|esq)\b", re.I)
+
+FORMS_UNAMBIGUOUS = {
+    "llc", "inc", "corp", "corporation", "ltd", "limited", "lp", "llp", "plc",
+    "gmbh", "bv", "nv", "oy", "kg", "spa", "pty", "sarl", "scs", "scsp",
+}
+FORMS_AMBIGUOUS = {"co", "company", "ab", "as", "ag", "sa", "n", "a", "na", "lc"}
+ORG_WORDS = {
+    "fund", "funds", "capital", "ventures", "venture", "partners", "partnership",
+    "holdings", "holding", "group", "trust", "management", "investments",
+    "investment", "advisors", "advisory", "series", "spv", "foundation",
+    "association", "university", "church", "ministries", "bank", "finance",
+    "financial", "global", "international", "services", "solutions", "systems",
+    "technologies", "industries", "enterprises", "realty", "properties",
+    "equity", "growth", "opportunities", "office", "estate", "family", "asset",
+    "assets", "school",
+}
+PLACEHOLDERS = {"n a", "na", "none", "unknown", "the", "same"}
 
 
 def norm(s):
+    """Fold a name down to comparable words: strip accents, drop punctuation and
+    case, collapse whitespace. "L.P." and "L P" have to land on the same string
+    for the suffix tests to work."""
     s = unicodedata.normalize("NFKD", s or "")
     s = "".join(c for c in s if not unicodedata.combining(c))
     s = s.lower().replace(".", " ")
-    s = re.sub(r"[^a-z0-9 ]+", " ", s)
+    s = re.sub(r"[^a-z0-9]+", " ", s)
     return re.sub(r"\s+", " ", s).strip()
 
 
 def is_entity(name):
+    """Is this related person a legal entity rather than a human?"""
     n = norm(name)
-    if not n or n in ("n a", "na", "none", "unknown", "the"):
-        return True
-    if ENTITY_TAIL.search(n):
+    if not n or n in PLACEHOLDERS:
         return True
     words = n.split()
-    # a lone token with no letters, or an all-caps style acronym, is not a person
-    if len(words) == 1 and (len(words[0]) <= 2 or not re.fullmatch(r"[a-z]+", words[0])):
+    if words[0] in FORMS_UNAMBIGUOUS or words[-1] in FORMS_UNAMBIGUOUS:
+        return True
+    if len(words) > 1:
+        # "l p" and "s a" arrive as two tokens because the periods are stripped,
+        # so the suffix tests run against the joined tail as well as the whole word
+        tail = words[-2] + words[-1]
+        if tail in FORMS_UNAMBIGUOUS or tail in FORMS_AMBIGUOUS:
+            return True
+    if ORG_WORDS.intersection(words):
         return True
     return False
 
@@ -68,6 +111,31 @@ def gini(values):
         return None
     cum = sum((i + 1) * x for i, x in enumerate(xs))
     return round((2.0 * cum) / (n * total) - (n + 1.0) / n, 3)
+
+
+def deg_hist(idx, cap=5):
+    """How many issuers each named person appears on, as a histogram."""
+    d = Counter(v["d"] for v in idx.values())
+    out = []
+    for k in range(1, cap + 1):
+        if d.get(k):
+            out.append([f"{k} compan" + ("y" if k == 1 else "ies"), d[k]])
+    over = sum(c for k, c in d.items() if k > cap)
+    if over:
+        out.append([f"{cap + 1}+ companies", over])
+    return out
+
+
+def repeat_industries(idx, by_name):
+    """What sort of business are the repeat names on? The index carries example
+    issuer names, so the lookup goes through the name rather than a row number."""
+    c = Counter()
+    for v in idx.values():
+        if v["d"] < 2:
+            continue
+        for nm in v["ex"]:
+            c[by_name.get(nm, "unclassified")] += 1
+    return c.most_common(8)
 
 
 def band_counts(vals, bands):
@@ -134,21 +202,19 @@ def main():
     recs = load()
     issuers = fold(recs)
 
+    # the directory carries only what the page reads. Everything else a filing
+    # holds stays in the raw crawl, and the handful of complete filings rendered
+    # as forms keep their full record.
     out_issuers = []
     for cur in issuers.values():
         people = [p for p in cur["p"].values() if not p["e"]]
         ents = [p for p in cur["p"].values() if p["e"]]
         out_issuers.append({
             "i": cur["acc"], "c": cur["cik"], "n": cur["name"], "f": cur["filed"],
-            "m": cur["amends"], "g": cur["ind"], "t": cur["ftype"],
-            "y": cur["etype"], "j": cur["juris"], "s": cur["state"],
-            "o": cur["offer"], "I": cur["offerInd"], "d": cur["sold"],
-            "k": cur["ninv"], "6": cur["c506"],
-            "P": [p["n"] for p in people][:8], "R": sorted({r for p in people for r in p["r"]}),
-            "E": [p["n"] for p in ents][:4],
-            "C": next((p["c"] for p in people if p["c"]), None),
-            "F": cur["sale0"], "B": cur["bcombo"], "X": cur["prev"],
-            "G": cur["sig"],
+            "m": cur["amends"], "g": cur["ind"], "s": cur["state"],
+            "I": cur["offerInd"], "d": cur["sold"], "k": cur["ninv"],
+            "6": cur["c506"], "R": sorted({r for p in people for r in p["r"]}),
+            "P": [p["n"] for p in people][:8], "E": [p["n"] for p in ents][:4],
         })
 
     funds = [i for i in out_issuers if i["g"] == FUND]
@@ -181,6 +247,7 @@ def main():
     cos_folded = [c for c in issuers.values() if c["ind"] != FUND]
     idx_all = index(tuples(issuers.values()), False)
     idx_people = index(tuples(issuers.values()), True)
+    idx_named_all = index(tuples(issuers.values()), True)   # people, every filing
     idx_cos = index(tuples(cos_folded), True)
     idx_entities = index(tuples(issuers.values()), None)
     ent_only = index(tuples(issuers.values()), "entity")
@@ -382,6 +449,11 @@ def main():
         "byState": by_state_co.most_common(12),
         "byStateAll": by_state.most_common(12),
         "byMonth": [[k, v] for k, v in sorted(by_month.items())],
+        "degCo": deg_hist(idx_cos),
+        "degAll": deg_hist(idx_named_all),
+        "repeatInd": repeat_industries(idx_cos,
+                                      {c["name"]: (c["ind"] or "unclassified")
+                                       for c in issuers.values()}),
         "rule506c": sum(1 for i in out_issuers if i["6"]),
         "rule506cCo": sum(1 for i in cos if i["6"]),
         "investors": {"all": inv_all, "co": inv_cos},

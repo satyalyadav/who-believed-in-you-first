@@ -153,14 +153,14 @@ First instinct was to frame the page around the whole quarter. The first pass
 through the data killed that:
 
 ```
-distinct persons: 2,942 appearances, 3,369
-  appear exactly once: 2,708  (92.0%)
+distinct persons: 3,083 appearances, 3,538
+  appear exactly once: 2,834  (91.9%)
 top repeat names:
-  'n/a fund gp, llc'            75
-  'n/a belltower fund group'    71
-  'llc sydecar'                 35
-  'brett sagan'                 33
-  'cameron vail'                29
+  'N/A Fund GP, LLC'                 75  as Director
+  'N/A Belltower Fund Group, Ltd.'   75  as Director
+  'LLC Sydecar'                      35  as Director
+  'Brett Sagan'                      33  as Executive Officer
+  'Cameron Vail'                     29  as Executive Officer
 ```
 
 Two thirds of the corpus is pooled investment funds, and the only names that
@@ -173,7 +173,60 @@ different and only one of them is about startups.
 
 ---
 
-## 6. Three things I got wrong, all of them visible on the page
+## 6. The bug that moved the headline number
+
+Telling a legal entity from a person decides every number in Item 4, and the test
+that does it had no word boundaries:
+
+```python
+ENTITY_TAIL.search(n)     # pattern: llc|inc|corp|co|...|as|ab|ag|...
+```
+
+Which meant "Salene Hitchcock-Gear" matched on `co` inside "hitchcock", and
+"Reshma Abraham" matched on `ab`. Real officers of Prudential's variable life
+company were being filed as shell companies, 194 filings that name nobody human
+were really naming people, and the repeater count was 31 when it should have
+been 36.
+
+Nobody would have caught this by reading the code, because the regex looks like
+what it says. What caught it was writing a second implementation from scratch and
+asking the two to agree. They did not, on three names, all of them starting with
+"LLC". The rule is now written out as five numbered tests in prose at the top of
+`build_drop.py`, stated independently in `verify.py`, and asserted by
+`scripts/verify.py` on 27 figures. An all-caps test that the original rule used
+never fired once on this corpus and has been deleted rather than left to misfire
+on the next one.
+
+The corrected figures, and they are the ones the page now publishes:
+
+```
+people on operating-company filings   1,504 distinct, 1,548 appearances
+  appear exactly once                   1,468  (97.61%)
+  appear on two or more                    36, adding 44 edges
+filings naming no human being            196 of 1,500
+```
+
+## 7. Two claims that were simply wrong
+
+**The filing deadline.** The page said Form D is filed "before the first sale."
+The form itself says no later than 15 days *after* it. That is not a pedantic
+correction, it is the whole of Item 5: by the time the form is filed the money
+is already committed, and it still records only how many people were in, never
+who they were.
+
+**Rule 506.** The page said 506 "lets a company sell shares to accredited
+investors." That is 506(c). Under 506(b) there is no accredited-investor
+requirement at all, no general solicitation is allowed, and up to 35 purchasers
+may be non-accredited provided each is financially sophisticated. Both readings
+now appear, with investor.gov linked.
+
+**The backer distribution.** The page described "a lot of rounds with one or two
+backers, a long thin tail of funds buying a hundred small cheques." The data
+says a quarter of operating companies report one backer, a third report eleven or
+more, and the largest single band is three to five. It is not a tail of tiny
+cheques. Rewritten to the shape that is actually there.
+
+## 8. Three things I got wrong, all of them visible on the page
 
 **"true" in the form.** The related-persons block rendered the literal string
 `true` in the label column of every row, because a placeholder helper was called
@@ -216,7 +269,7 @@ The sensitivity sweep that did it:
 
 ---
 
-## 7. Design, in one pass
+## 9. Design, in one pass
 
 The subject is a regulatory form, so the page is a regulatory form. Cold paper
 rather than cream, one mono family for everything structural and a high-contrast
@@ -236,7 +289,7 @@ histogram of degrees says it in one bar.
 
 ---
 
-## 8. Verification
+## 10. Verification
 
 Layout was checked in a real browser rather than by eye. The preview tool's
 screenshot path was broken in this environment, so a local Chromium was
@@ -250,23 +303,43 @@ in a 1116px column, a grid blowout on mobile because `.chart` was missing
 `min-width: 0`, and a horizontal scroll on the whole page traced to a `nav` with
 `min-width: auto` inside a grid.
 
-Final numbers, all computed in `build_drop.py` and printed in the receipts table
-so the page cannot disagree with the crawl:
+Speed came next, and the measurement was not where I expected. The endorsement
+model was not slow because the inner loop was slow; 100 rounds of it cost 1ms.
+It was slow because the run happened four times per redraw, and each run took a
+snapshot 200 times, and each snapshot spread a `Float64Array` into a JavaScript
+array, filtered it and sorted it. That is 800 sorts per keystroke. Sorting the
+typed array directly is about five times faster, the three extra runs only need
+one number each so they skip snapshotting entirely, the visible set only ever
+grows so it is appended to rather than rescanned every round, and the whole thing
+moved into a Web Worker so a redraw never blocks the page. A slider drag went
+from a 1.1s blocking handler to a 0ms one, with the curve arriving about 300ms
+later and the frame gap never exceeding 20ms. `scripts/check-model.mjs` checks
+the fast implementation against a deliberately naive one across eight
+configurations, because an optimisation that changes the answer is worse than a
+slow page.
+
+The directory payload lost 290KB by dropping nine fields the page never reads,
+and the 400 table rows now use `content-visibility`. Page load went from 687ms to
+308ms to DOMContentLoaded.
+
+Final numbers, all computed in `build_drop.py`, independently recomputed by
+`scripts/verify.py`, and printed in the receipts table so the page cannot
+disagree with the crawl:
 
 ```
 sample: 1,500 of 15,282 filings in the quarter
 issuers: 1,487 after folding 546 amendments
 funds: 1,003 (67.45%)      operating companies: 484 (32.55%)
-names on operating companies: 1,251 distinct, 1,289 appearances
-  97.52% appear once, 31 repeaters adding 38 edges
-filings naming no human being: 335
-backer counts: 404 of 484 operating companies report one
+names on operating companies: 1,504 distinct, 1,548 appearances
+  97.61% appear once, 36 repeaters adding 44 edges
+filings naming no human being: 196 of 1,500
+backer counts: 404 of 484 operating companies report at least one, none blank
   median 7 backers, median implied cheque $206,250, Gini 0.903
 ```
 
 ---
 
-## 9. What I would do next
+## 11. What I would do next
 
 The 484 operating-company filings are one quarter of one exemption. The same
 code against Reg A and Reg CF, and against the 13D/G and Form ADV records where
