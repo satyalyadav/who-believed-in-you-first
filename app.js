@@ -107,7 +107,7 @@ function renderForm(f, opts = {}) {
     <div class="frow"><span class="k">Address</span><span class="v">${nd(f.city)}, ${nd(f.state)}</span></div>
     ${(!compact && f.prev.length) ? `<div class="frow"><span class="k">Previous names</span><span class="v">${esc(f.prev.join("; "))}</span></div>` : ""}
 
-    <div class="fsec">Item 2. Officers, directors and promoters <span style="font-weight:400;color:var(--ink-3)">— everyone the issuer named</span></div>
+    <div class="fsec">Item 2. Officers, directors and promoters <span style="font-weight:400;color:var(--ink-3)">the complete list the issuer gave</span></div>
     ${persons || `<div class="frow"><span class="k">related persons</span><span class="v"><span class="nodata">&nbsp;</span></span></div>`}
 
     <div class="fsec">Item 3. Industry</div>
@@ -136,7 +136,7 @@ function renderForm(f, opts = {}) {
       <span class="v">${moneyCell(f.rem, f.remInd)}</span></div>
     <div class="frow hi"><span class="k">Investors who had already invested</span>
       <span class="v">${f.ninv ? fmt(f.ninv) : nd(false)}
-        <span style="color:var(--ink-3)">${f.ninv ? "— a count, not a list" : ""}</span></span></div>
+        <span style="color:var(--ink-3)">${f.ninv ? "a count, never a list of names" : ""}</span></span></div>
     ${compact ? "" : `<div class="frow"><span class="k">Sales commissions</span><span class="v">${moneyCell(f.comm, false)}</span></div>
     <div class="frow"><span class="k">Finders' fees</span><span class="v">${moneyCell(f.fees, false)}</span></div>
     ${f.proceeds ? `<div class="frow"><span class="k">Gross proceeds used</span><span class="v">${moneyCell(f.proceeds, false)}</span></div>` : ""}
