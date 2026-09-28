@@ -1036,13 +1036,15 @@ function boot(DATA) {
   $("#iss-n").textContent = fmt(st.issuers);
   const nu = $("#nonus");
   if (nu) nu.textContent = fmt(st.nonUsTotal);
-  $("#s3 h2").textContent = "Two thirds of it is not startups";
+  const noamt = $("#noamount");
+  if (noamt) noamt.textContent = fmt(st.fundsNoAmount);
 
   $("#graphtext").innerHTML =
     `Pull the named people out of those filings and draw an edge from each person
      to every company they were named on. That is the endorsement graph, minus
-     the endorsements, taken from the only structured US filing that names the
-     people behind a private company at the moment it raises. Across the whole sample,
+     the endorsements, taken from the one structured US feed that covers every
+     Regulation D raise, names the people behind it, and never names the
+     investors. Across the whole sample,
      <span class="mono">${fmt(st.cos)}</span> operating-company filings name
      <span class="mono">${fmt(people.appearances)}</span> people in
      <span class="mono">${fmt(people.distinct)}</span> distinct names.`;

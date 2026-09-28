@@ -135,12 +135,14 @@ section + section { border-top: 1px solid var(--rule-2); }
 
 h1, h2, h3 { margin: 0; font-weight: 400; }
 
-h2.with-no {
+h2.with-no:has(> .item-no) {
   display: grid;
   grid-template-columns: 4.6rem minmax(0, 1fr);
-  gap: 0 18px;
+  gap: 0 20px;
   align-items: baseline;
+  max-width: none;
 }
+h2.with-no > span:last-child { max-width: 26ch; }
 h2.with-no > .item-no {
   font-family: var(--mono);
   font-size: 12px;
@@ -151,8 +153,9 @@ h2.with-no > .item-no {
   transform: translateY(-0.15em);
 }
 @media (max-width: 620px) {
-  h2.with-no { grid-template-columns: 1fr; gap: 6px; }
+  h2.with-no:has(> .item-no) { grid-template-columns: 1fr; gap: 6px; }
   h2.with-no > .item-no { transform: none; }
+  h2.with-no > span:last-child { max-width: none; }
 }
 
 h1 {
@@ -161,15 +164,17 @@ h1 {
   line-height: 0.98;
   letter-spacing: -0.022em;
   max-width: 15ch;
+  text-wrap: balance;
 }
 
 h2 {
   font-family: var(--display);
-  font-size: clamp(2rem, 4.6vw, 3.2rem);
-  line-height: 1.06;
+  font-size: clamp(1.9rem, 4.2vw, 2.9rem);
+  line-height: 1.08;
   letter-spacing: -0.016em;
-  max-width: 21ch;
+  max-width: 26ch;
   margin-bottom: 6px;
+  text-wrap: balance;
 }
 
 h3 {
@@ -538,9 +543,9 @@ table.dir td.acc { color: var(--ink-3); font-size: 11.5px; white-space: nowrap; 
   border-top: 1px solid var(--rule);
   font-family: var(--mono);
 }
-.readout div { min-width: 128px; }
+.readout div { flex: 1 1 150px; min-width: 0; max-width: 230px; }
 .readout .n { display: block; font-size: 1.62rem; line-height: 1.05; color: var(--ink); font-variant-numeric: tabular-nums; }
-.readout .l { display: block; font-size: 11.5px; color: var(--ink-3); margin-top: 2px; }
+.readout .l { display: block; font-size: 11.5px; line-height: 1.35; color: var(--ink-3); margin-top: 2px; }
 .readout .n.warn { color: var(--x); }
 
 /* ---------------------------------------------------------------- instrument */
