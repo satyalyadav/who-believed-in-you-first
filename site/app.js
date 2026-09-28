@@ -645,8 +645,10 @@ function renderReceipts() {
       no code with the one that wrote this file, and the two fail loudly on any
       disagreement. The entity test, which decides the headline numbers, is
       stated in that script rather than left to a regex`],
-    ["cosign copy", `cosign.co and the a16z and Erik Torenberg launch posts,
-      retrieved ${today}`],
+    ["cosign copy", `cosign.co, the a16z and Erik Torenberg launch posts, the MTS
+      announcement and Dealroom's launch writeup, all retrieved ${today}. The
+      intent network is Dealroom's description of what the founders call it, and
+      the private signal is MTS's own wording`],
   ];
   $("#receipts").innerHTML = rows.map(([k, v]) =>
     `<tr><th scope="row">${k}</th><td>${v}</td></tr>`).join("");
@@ -658,64 +660,110 @@ const sim = {
   n: 2000, seed: 20, vis: 3, w: 0.85, eff: 0.06, reach: 0.3, noise: 0.5, cohort: 0.25,
   series: [], last: null, flat: null, lock: null, lockFlat: null,
   capLow: null, capHigh: null, capThin: null, capFat: null, capAmpLo: null, capAmpHi: null,
-  axis: null, runId: 0, busy: false, queued: null, dragging: false,
+  axis: null, queued: null, dragging: false, extremesFresh: false,
 };
 
-/* The model runs in a worker so a redraw never blocks the page, and it streams
-   the curve back while it is still computing, so the line grows under the
-   reader's hand rather than appearing once at the end. While a run is in flight,
-   knob moves collapse into one queued run instead of queueing a run each. The
-   six comparison numbers the prose quotes cost six more runs, so those are only
-   asked for once the reader stops moving things. */
-let worker = null;
+/* Two workers. The first draws the curve and streams it back while it computes.
+   The second recomputes the all-discovery comparison, which is what the dashed
+   line sits at, so that line moves with the knob instead of jumping when the
+   pointer is released. The six numbers the paragraph quotes cost six more full
+   runs, so those are only asked for once the drag has settled.
+   Splitting them across two workers is what keeps a slider tick at about 35ms
+   instead of the 65ms it would take to run both in one. */
+let wA = null, wB = null, busyB = false, pendingB = null, pendingA = false;
 let runSeq = 0;
 let drawQueued = false;
 
-function startWorker() {
-  if (worker) return worker;
-  worker = new Worker("model-worker.js");
-  worker.onmessage = e => {
+function startWorkers() {
+  if (wA) return;
+  wA = new Worker("model-worker.js");
+  wA.onmessage = e => {
     const d = e.data;
     if (d.id !== runSeq) return;              // a newer run superseded this one
     if (d.stage === 1) {
-      if (d.id !== sim.runId) { sim.runId = d.id; sim.axis = null; }
       sim.series = d.series;
       scheduleDraw();
-    } else if (d.stage === 2) {
-      sim.series = d.series;
-      sim.last = d.last;
-      sim.lock = d.lock;
-      scheduleDraw();
-      if (sim.queued) { const q = sim.queued; sim.queued = null; requestModel(q); }
-      else sim.busy = false;
-    } else {
-      sim.flat = d.flat;
-      sim.lockFlat = d.lockFlat;
-      sim.capLow = d.capLow;
-      sim.capHigh = d.capHigh;
-      sim.capThin = d.capThin;
-      sim.capFat = d.capFat;
-      sim.capAmpLo = d.capAmpLo;
-      sim.capAmpHi = d.capAmpHi;
-      scheduleDraw();
+      return;
     }
+    sim.series = d.series;
+    sim.last = d.last;
+    sim.lock = d.lock;
+    pendingA = false;
+    scheduleDraw();
+    if (sim.queued) { const q = sim.queued; sim.queued = null; sendA(q); }
+    else if (!sim.dragging) requestExtremes();
   };
-  worker.onerror = () => { sim.busy = false; };
-  return worker;
+  wA.onerror = () => { pendingA = false; };
+
+  wB = new Worker("model-worker.js");
+  wB.onmessage = e => {
+    const d = e.data;
+    busyB = false;
+    if (d.id === runSeq) {
+      if (d.kind === "control") {
+        sim.flat = d.flat;
+        sim.lockFlat = d.lockFlat;
+        scheduleDraw();
+      } else {
+        sim.capLow = d.capLow;
+        sim.capHigh = d.capHigh;
+        sim.capThin = d.capThin;
+        sim.capFat = d.capFat;
+        sim.capAmpLo = d.capAmpLo;
+        sim.capAmpHi = d.capAmpHi;
+        sim.extremesFresh = true;
+        scheduleDraw();
+      }
+    }
+    drainB();
+  };
+  wB.onerror = () => { busyB = false; };
 }
 
-function requestModel(cfg) {
-  const w = startWorker();
-  sim.busy = true;
-  w.postMessage({ ...cfg, id: ++runSeq, quick: sim.dragging });
+/* The second worker takes one job at a time and always prefers the newest, so
+   dragging a knob never queues up a backlog of stale comparison runs. */
+function askB(kind, cfg) {
+  pendingB = { kind, cfg };
+  drainB();
 }
 
+function drainB() {
+  if (busyB || !pendingB) return;
+  const job = pendingB;
+  pendingB = null;
+  busyB = true;
+  wB.postMessage({ ...job.cfg, kind: job.kind, id: runSeq });
+}
+
+function sendA(cfg) {
+  startWorkers();
+  pendingA = true;
+  const id = ++runSeq;
+  sim.extremesFresh = false;                  // the paragraph quotes the old run
+  wA.postMessage({ ...cfg, kind: "main", id });
+  askB("control", cfg);
+}
+
+/* One curve run at a time. A knob move during a run replaces the queued one
+   rather than adding to it. */
 function runModel() {
-  if (sim.busy) { sim.queued = { ...sim }; return; }
-  requestModel({ ...sim });
+  const cfg = { ...sim };
+  if (pendingA) { sim.queued = cfg; return; }
+  sendA(cfg);
 }
 
-/* One draw per frame no matter how many messages arrive inside it. */
+/* Called when the reader stops moving a knob. The six numbers the paragraph
+   quotes cost six more runs, so they wait for this. */
+function requestExtremes() {
+  if (sim.extremesFresh || pendingB && pendingB.kind === "extremes") return;
+  askB("extremes", { ...sim });
+}
+
+function markSettled() {
+  sim.dragging = false;
+  if (!pendingA && !sim.queued) requestExtremes();
+}
+
 function scheduleDraw() {
   if (drawQueued) return;
   drawQueued = true;
@@ -744,7 +792,7 @@ function drawSim() {
   /* The capture ratio is at its maximum at round zero, when the day-one cohort
      holds everything, so the first point of a run is its peak. Pinning the axis
      to that point means the line grows into a stable frame instead of rescaling
-     under itself on every streamed batch. It is computed once per run. */
+     under itself on every streamed batch. */
   const tMax = 999;
   if (sim.axis == null && series.length) sim.axis = Math.max(2, Math.ceil(series[0][1] * 2) / 2);
   if (flat) sim.axis = Math.max(sim.axis || 2, Math.ceil(flat.capture * 2) / 2);
@@ -832,7 +880,13 @@ function drawSim() {
   $("#sim-readout").innerHTML = cards.map(([n, l], i) =>
     `<div><span class="n${i === 0 ? "" : " warn"}">${n}</span><span class="l">${l}</span></div>`).join("");
 
-  if (last && flat) $("#sim-verdict").innerHTML = verdictHtml(last, flat);
+  if (last && flat && sim.extremesFresh) $("#sim-verdict").innerHTML = verdictHtml(last, flat);
+  const pend = $("#sim-prose-status");
+  if (pend) {
+    pend.textContent = sim.extremesFresh ? ""
+      : (last && flat ? "recomputing the ranges this paragraph quotes" : "");
+    $("#sim-verdict").classList.toggle("pending", !sim.extremesFresh);
+  }
 }
 
 function verdictHtml(last, flat) {
@@ -890,25 +944,22 @@ function wireSim() {
     el.addEventListener("pointerdown", () => { sim.dragging = true; });
     el.addEventListener("input", () => { readKnob(); runModel(); });
     for (const done of ["pointerup", "pointercancel", "change", "blur"]) {
-      el.addEventListener(done, () => {
-        if (!sim.dragging) return;
-        sim.dragging = false;
-        runModel();          // one full run, with the comparison numbers
-      });
+      el.addEventListener(done, () => { if (sim.dragging) markSettled(); });
     }
-    el.addEventListener("keydown", () => { sim.dragging = false; });
+    // keyboard moves are discrete, so each one settles immediately
+    el.addEventListener("keydown", () => { sim.dragging = false; markSettled(); });
     readKnob();
   });
   $("#sim-run").addEventListener("click", () => {
     sim.seed = sim.seed >= 300 ? 1 : sim.seed + 1;
     $("#k-seed").value = sim.seed;
     $("#v-seed").textContent = sim.seed;
-    sim.dragging = false;
+    markSettled();
     runModel();
   });
   $("#sim-shuffle").addEventListener("click", () => {
     sim.seed = 1 + Math.floor(Math.random() * 400);
-    sim.dragging = false;
+    markSettled();
     runModel();
   });
   runModel();

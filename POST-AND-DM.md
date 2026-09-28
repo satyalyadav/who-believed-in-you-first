@@ -17,8 +17,10 @@ action on someone else's account, so I will not touch it until you say so.
 > that already exists.
 >
 > cosign says profiles get "cosigned by the people who believe in them," built
-> from "attributable context from people who have worked together." I wanted to
-> see how much of that record is actually on disk.
+> from "attributable context from people who have worked together." There is also
+> a second layer, what the founders call an intent network, where members
+> privately signal who they would fund or work with. I wanted to see how much of
+> the record underneath all that is actually on disk.
 >
 > The US government has been publishing its own version every day since 2001.
 > Form D: before a company sells shares under an exemption, it files a notice

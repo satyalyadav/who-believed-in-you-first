@@ -38,7 +38,7 @@ specific failure described in [TRANSCRIPT.md](TRANSCRIPT.md).
 | `scripts/verify.py` | recomputes every figure on the page from the raw crawl with a second implementation that shares no code, and fails loudly on disagreement |
 | `scripts/check-model.mjs` | checks the endorsement model against a naive reference implementation across the parameter space |
 | `site/index.html` | the page |
-| `site/app.js` | directory, charts, and the endorsement model |
+| `site/app.js` | directory, charts, and the endorsement model. The model runs in two workers: one streams the curve, one recomputes the comparison so the dashed line moves with the slider |
 | `site/style.css` | the design system |
 | `data/formd.jsonl` | one JSON record per filing, as parsed |
 | `data/accessions.json` | the complete Q3 population from the daily index |

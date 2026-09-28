@@ -182,12 +182,44 @@ function giniOf(desc, total, m) {
   return (2 * cum) / (m * total) - (m + 1) / m;
 }
 
+/* Three kinds of work, so the page can run the cheap ones on every slider tick
+   and the expensive ones only when the reader stops moving things.
+
+   main      the curve, streamed as it is computed, then the final point and the
+             lock-in number
+   control   the all-discovery comparison, which is what the dashed line and the
+             second readout card show. Cheap enough to run on every tick.
+   extremes  the six values the paragraph quotes at the ends of three sliders.
+             Six full runs, so this is only asked for once a drag has settled. */
 self.onmessage = e => {
   const cfg = e.data;
   const id = cfg.id;
-  const quick = !!cfg.quick;
 
-  // stage 1 and 2: the curve, streamed, then finished
+  if (cfg.kind === "control") {
+    const ctl = simulate({ ...cfg, reach: 1, seed: cfg.seed + 7919 }, false);
+    self.postMessage({
+      id, stage: 3, kind: "control",
+      flat: { capture: ctl.last.capture, visible: ctl.last.visible },
+      lockFlat: ctl.lock,
+    });
+    return;
+  }
+
+  if (cfg.kind === "extremes") {
+    const at = c => simulate({ ...cfg, ...c }, false).last.capture;
+    self.postMessage({
+      id, stage: 4, kind: "extremes",
+      capLow: at({ vis: 1 }),
+      capHigh: at({ vis: 12 }),
+      capThin: at({ cohort: 0.02 }),
+      capFat: at({ cohort: 0.6 }),
+      capAmpLo: at({ seed: 1 }),
+      capAmpHi: at({ seed: 300 }),
+    });
+    return;
+  }
+
+  // main: the curve the reader is watching
   const main = simulate(cfg, true, series => {
     self.postMessage({ id, stage: 1, series: series.map(p => [p.t, p.capture]) });
   });
@@ -196,29 +228,5 @@ self.onmessage = e => {
     series: main.series.map(p => [p.t, p.capture]),
     last: main.last,
     lock: main.lock,
-  });
-
-  if (quick) return;
-
-  // stage 3: the extreme values the prose quotes, each measured rather than
-  // asserted. These cost four more runs, which is why they wait for the drag to
-  // finish.
-  const ctl = simulate({ ...cfg, reach: 1, seed: cfg.seed + 7919 }, false);
-  const low = simulate({ ...cfg, vis: 1 }, false);
-  const high = simulate({ ...cfg, vis: 12 }, false);
-  const thin = simulate({ ...cfg, cohort: 0.02 }, false);
-  const fat = simulate({ ...cfg, cohort: 0.6 }, false);
-  const ampLo = simulate({ ...cfg, seed: 1 }, false);
-  const ampHi = simulate({ ...cfg, seed: 300 }, false);
-  self.postMessage({
-    id, stage: 3,
-    flat: { capture: ctl.last.capture, visible: ctl.last.visible },
-    lockFlat: ctl.lock,
-    capLow: low.last.capture,
-    capHigh: high.last.capture,
-    capThin: thin.last.capture,
-    capFat: fat.last.capture,
-    capAmpLo: ampLo.last.capture,
-    capAmpHi: ampHi.last.capture,
   });
 };

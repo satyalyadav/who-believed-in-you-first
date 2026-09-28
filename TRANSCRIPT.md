@@ -322,9 +322,36 @@ magnitude. Measured ranking of everything on the panel:
 The paragraph now reports the extremes it measures at both ends of three of those
 sliders, on every redraw, so it cannot drift from the model again.
 
-## 10. Making the slider live
+## 10. What the third audit caught: a missing half of the subject
 
-The complaint was that the graph sat still while the slider moved and only
+The first audit recomputed the crawl. The second tested the crawl against EDGAR
+and against itself. This one went back to the sources for the claims that do not
+come from data, and found that item 1 described half of cosign.
+
+The page had the public half right: cosigns on a profile are attributed,
+permanent and visible. What it missed is that cosign also runs an intent network,
+where members privately signal who they would fund or hire and are matched when
+the interest is mutual. That is not a footnote. A reputation system whose visible
+layer is a public endorsement and whose valuable layer is a private signal has
+made the same choice Form D made, and the piece is stronger for saying so: the
+part of the record worth the most is the part nobody publishes.
+
+Also corrected in this pass: the description of cosign was a paraphrase where it
+could have been the exact wording, David Booth co-introduced it, and the launch
+claims now link to the MTS announcement and to Dealroom's writeup.
+
+The new check this round was at the DOM rather than the data. Every figure the
+page renders was scraped out of the live document and compared against
+`drop.json`: the counts in the prose, every bar label and bar value in both
+degree histograms, the top of the signature-agent chart, every row of the
+repeater industry table and the repeater people table, the receipts table, and
+the sign and magnitude of the model readout. All of them match. That is a
+different failure mode from the earlier audits, which could both have passed
+while the rendering showed something else.
+
+## 11. Making the slider live, twice
+
+The first complaint was that the graph sat still while the slider moved and only
 updated on release. It did not, quite: it was updating about seven times a
 second. But each update needed four full simulations, so the curve lagged the
 thumb badly enough to read as static.
@@ -347,7 +374,49 @@ gap 18ms, first repaint 20ms after the knob moves, and the comparison numbers
 landing about a fifth of a second after release. That is a live instrument rather
 than a screenshot of one.
 
-## 11. Design, in one pass
+It was still not live. The second complaint was the same as the first, which is
+the useful part. The curve was redrawing 32 times a second, the frame gap was
+18ms, and the streaming was working exactly as designed. What the reader was
+watching was the dashed control line, and that line needed the all-discovery run,
+which was one of the three runs being skipped during a drag. So the solid curve
+moved and the dashed line sat still until the pointer came up, and then snapped.
+The chart looked frozen because half of it was.
+
+The instrumented measurement said the pipeline was healthy. It was measuring the
+pipeline. What it needed to measure was whether the pixels changed, which is what
+the complaint was about. Two graphs of the same legend text across a drag:
+
+```
+before   day-one cohort 2.86x ... all discovery 1.01x
+         day-one cohort 2.26x ... all discovery 1.01x      <- frozen
+         ...
+         day-one cohort 3.82x ... all discovery 1.01x
+         (release)
+         day-one cohort 3.82x ... all discovery 2.41x      <- snaps
+
+after    day-one cohort 3.16x ... all discovery 1.01x
+         day-one cohort 3.37x ... all discovery 1.04x      <- moving
+         day-one cohort 3.55x ... all discovery 1.21x
+         day-one cohort 3.82x ... all discovery 2.41x
+         (release, nothing left to change)
+```
+
+The fix is a second worker. The curve run and the comparison run are independent,
+so running them in one worker serialised about 65ms per slider tick when each is
+about 30ms on its own. Two workers take the tick to about 35ms, which is what
+lets the dashed line keep up. The six numbers the paragraph quotes still wait for
+the drag to end, because a paragraph that rewrites itself under the reader's hand
+is unreadable, and because six runs is 200ms of work for text nobody is reading
+mid-drag. While they are stale the paragraph is dimmed and says it is
+recomputing, rather than quietly showing old numbers.
+
+Checked afterwards: 88 redraws across a 2.7-second drag, 32 per second, worst
+frame gap 18ms, one redraw after release. And across the whole parameter space,
+including the worst corner where the network is 6,000 people and every round
+carries 800 endorsements: 75, 56 and 31 redraws per second at the three extremes.
+No degradation guard is needed.
+
+## 12. Design, in one pass
 
 The subject is a regulatory form, so the page is a regulatory form. Cold paper
 rather than cream, one mono family for everything structural and a high-contrast
@@ -367,7 +436,7 @@ histogram of degrees says it in one bar.
 
 ---
 
-## 12. Verification
+## 13. Verification
 
 Layout was checked in a real browser rather than by eye. The preview tool's
 screenshot path was broken in this environment, so a local Chromium was
@@ -421,7 +490,7 @@ Rule 504 filings present: 8 (so Rule 504 is not an exclusion)
 
 ---
 
-## 13. What I would do next
+## 14. What I would do next
 
 The 484 operating-company filings are one quarter of one exemption. The same
 code against Reg A and Reg CF, and against the 13D/G and Form ADV records where
