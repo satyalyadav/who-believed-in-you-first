@@ -416,7 +416,63 @@ including the worst corner where the network is 6,000 people and every round
 carries 800 endorsements: 75, 56 and 31 redraws per second at the three extremes.
 No degradation guard is needed.
 
-## 12. Design, in one pass
+## 12. Titles, and a fourth audit
+
+The complaint was that the titles laid out badly. Item 3's was the worst of them:
+"Two thirds of it is not startups" was rendering one word per line, six lines
+deep, in a 73-pixel column.
+
+The cause was not typography. A line added early in the build, when that heading
+was generated from data, was still running on every boot:
+
+```js
+$("#s3 h2").textContent = "Two thirds of it is not startups";
+```
+
+Setting `textContent` on an element destroys its children. The heading had been
+written as a span for the title and a span for the item number, and that one line
+flattened it to bare text. The stylesheet puts the title in the second column of a
+two-column grid and the item number in the first, so with the spans gone the whole
+title was laid into the 4.6rem gutter. The fix is deleting the line, and the
+lesson is that assigning textContent to an element you did not create yourself
+silently deletes whatever was inside it.
+
+Two changes so it cannot happen again. The grid now only applies when the number
+is actually present, via `:has(> .item-no)`, and the measure moved from the grid
+container onto the title text, so a missing number can no longer eat into the
+line length. And headings now use `text-wrap: balance`, which is what stops "The
+government already files it" from leaving "it" alone on a second line.
+
+The audit that went with it found four more things.
+
+**Two false claims had survived the previous audit.** I fixed the generated
+paragraph under the chart and never went back to the static intro paragraph above
+it, which still told the reader to "change the threshold ... and watch that it
+barely matters" and to "change who starts with reach ... and watch that it
+decides everything." Both had already been disproved by measurement. The intro
+now states the measured ranking instead.
+
+**A claim about the data was simply false.** The directory note said most funds
+report an indefinite offering rather than a number. No filing in the sample
+reports an indefinite offering. 218 of the 1,003 funds report no amount at all,
+which is a different thing and now what the note says.
+
+**A claim about the model was only true at the defaults.** The chart legend said
+the all-discovery control "sits on parity." It does at the default settings
+(1.00x to 1.01x), but at a visibility threshold of twelve it reads 2.41x, because
+past a point the threshold alone gates who is seen. The legend now says that.
+
+**Two slider labels described the wrong thing.** The reputation weight was
+annotated "0.98 is pay to play," which is a claim about money and this dial is
+not; it weights an endorsement by the endorser's own standing. And "endorsements
+per round" is a rate the model multiplies by the network size, so the honest label
+is per person per round.
+
+The DOM audit now also checks the titles: that none wraps past two lines, that
+none has one word per line, that none overflows, and that all seven numbered
+headings still have their numbers.
+
+## 13. Design, in one pass
 
 The subject is a regulatory form, so the page is a regulatory form. Cold paper
 rather than cream, one mono family for everything structural and a high-contrast
@@ -436,7 +492,7 @@ histogram of degrees says it in one bar.
 
 ---
 
-## 13. Verification
+## 14. Verification
 
 Layout was checked in a real browser rather than by eye. The preview tool's
 screenshot path was broken in this environment, so a local Chromium was
@@ -490,7 +546,7 @@ Rule 504 filings present: 8 (so Rule 504 is not an exclusion)
 
 ---
 
-## 14. What I would do next
+## 15. What I would do next
 
 The 484 operating-company filings are one quarter of one exemption. The same
 code against Reg A and Reg CF, and against the 13D/G and Form ADV records where

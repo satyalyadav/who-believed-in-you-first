@@ -478,6 +478,9 @@ def main():
         "mergedIssuers": sum(1 for v in issuers.values() if v["amends"] > 0),
         "rule506c": sum(1 for i in out_issuers if i["6"]),
         "rule506cCo": sum(1 for i in cos if i["6"]),
+        "fundsNoAmount": sum(1 for i in funds if not i["d"]),
+        "cosNoAmount": sum(1 for i in cos if not i["d"]),
+        "indefiniteOfferings": sum(1 for i in out_issuers if i["I"]),
         "investors": {"all": inv_all, "co": inv_cos},
         "soldBandsCo": band_counts(
             [i["d"] for i in cos if i["d"]],

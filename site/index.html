@@ -133,8 +133,10 @@
         documents American corporate law produces and almost nobody opens. Here
         are five of them from the sample, unmodified, so you can see what the
         same page looks like when the issuer is a biotech, an insurer, a
-        property vehicle and a fund. The rows with a warm tint are the four
-        fields that matter for this story.</p>
+        property vehicle and a fund. The three rows with a warm tint are the ones
+        this story turns on: what was offered, what was sold, and how many people
+        had already bought. The last of those is a count with no names attached,
+        which is the whole of Item 5.</p>
 
       <div id="anatomy"></div>
 
@@ -171,8 +173,8 @@
       <p class="note">Every operating-company filing in the sample, searchable.
         Click any row to open the filing. Click a person's name to see every other
         company they are named on. Amounts are what the issuer reported as sold by
-        its most recent filing, not a valuation, and most funds report an
-        indefinite offering rather than a number.</p>
+        its most recent filing, not a valuation, and <span class="mono"
+        id="noamount"></span> of the funds report no amount at all.</p>
 
       <div class="ctl mono">
         <input type="search" id="q" placeholder="search issuer, person, accession" aria-label="Search the directory">
@@ -217,9 +219,9 @@
       <h2 class="with-no"><span class="item-no">Item 4</span><span>The graph you cannot build from it</span></h2>
       <p id="graphtext">Pull the named people out of those filings and draw an
         edge from each person to every company they were named on. That is the
-        endorsement graph, minus the endorsements, taken from the only
-        machine-readable US record of who stood behind a private company when it
-        raised.</p>
+        endorsement graph, minus the endorsements, taken from the one structured
+        US feed that covers every Regulation D raise, names the people behind it,
+        and never names the investors.</p>
       <p id="graphverdict" class="finding"></p>
 
       <div class="charts">
@@ -300,10 +302,12 @@
       <h2 class="with-no"><span class="item-no">Item 5</span><span>The one field that counts backers</span></h2>
       <p>Form D has a box, near the bottom, that asks for the total number of
         investors who had already invested in the offering by the time the
-        filing was made. Every operating company in the sample answers it. None
-        of them leaves it blank. The shape is not the one you would guess. A
-        quarter report one or two backers, 83 of them exactly one, a third report
-        eleven or more, and the largest single band is three to five. This is not
+        filing was made. Not one operating company in the sample leaves it blank.
+        404 of the 484 report at least one backer and the other 80 report zero,
+        which on this form means the first sale had not happened yet. The shape
+        among the 404 is not the one you would guess. A quarter report one or two
+        backers, 83 of them exactly one, a third report eleven or more, and the
+        largest single band is three to five. This is not
         a tail of small friends-and-family cheques. It is mostly small
         institutional rounds with a handful of buyers each, which is the part of
         the market nobody has ever felt the need for a directory.</p>
@@ -348,11 +352,14 @@
         weights an endorsement, so being endorsed by someone well endorsed is
         worth more. Early endorsers are rewarded with reach, which cosign's own
         copy promises: make discoveries before anyone else.</p>
-      <p>Run it for a few hundred rounds and look at the concentration. Then
-        change the threshold, which is the number a product team argues about
-        most, and watch that it barely matters. Then change who starts with
-        reach, which nobody argues about at all, and watch that it decides
-        everything.</p>
+      <p>Run it for a few hundred rounds and look at the concentration. Then move
+        each dial and watch which ones matter, because the ranking is not the one
+        you would guess. How many people are already credible when the doors open
+        is the largest effect on the panel by a distance. The visibility threshold
+        is the number a product team argues about most, and it is real, but it is
+        second. The dial that sounds most like a product decision, amplifying the
+        early endorsers, barely moves it at all. The paragraph under the chart
+        measures all three at both ends of their sliders on every redraw.</p>
 
       <div class="panel" id="sim-panel">
         <div class="panel-head">
@@ -382,7 +389,7 @@
             <div class="knob">
               <label for="k-w">reputation weight <b id="v-w">0.85</b></label>
               <input type="range" id="k-w" min="0" max="0.98" step="0.01" value="0.85">
-              <div class="hint">0 is one person one vote, 0.98 is pay to play</div>
+              <div class="hint">0 is one person one vote; higher makes the endorser's standing count for more</div>
             </div>
             <div class="knob">
               <label for="k-rr">share of flow that is discovery <b id="v-rr">0.30</b></label>
@@ -390,7 +397,7 @@
               <div class="hint">the rest is social proof: seen because you look worth seeing</div>
             </div>
             <div class="knob">
-              <label for="k-eff">endorsements per round <b id="v-eff">0.06</b></label>
+              <label for="k-eff">endorsements per person per round <b id="v-eff">0.06</b></label>
               <input type="range" id="k-eff" min="0.005" max="0.4" step="0.005" value="0.06">
             </div>
             <div class="knob">
@@ -412,7 +419,10 @@
               head start the mechanism never gives back. The solid line is a run
               with social proof in it. The dashed line is the same network with
               every endorsement arriving through discovery instead, which is the
-              control, and it sits on parity.
+              control. At the defaults it sits on parity, and that is the finding:
+              with nothing compounding, a head start is worth nothing. Raise the
+              threshold far enough and even the control lifts, because past a
+              point the threshold alone decides who is seen.
             </p>
           </div>
         </div>
