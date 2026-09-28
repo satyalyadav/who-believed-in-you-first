@@ -18,17 +18,17 @@ function mulberry32(a) {
 /* Snapshot density. The curve moves fast in the first two hundred rounds and then
    flattens, so sampling is dense early and sparse late. Around a hundred points
    over a thousand rounds is smooth at any width the canvas is ever drawn. */
-function snapshotAt(t) {
-  if (t < 200) return t % 4 === 0;
-  if (t < 500) return t % 10 === 0;
-  return t % 25 === 0;
+function snapshotAt(rounds) {
+  if (rounds < 200) return rounds % 4 === 0;
+  if (rounds < 500) return rounds % 10 === 0;
+  return rounds % 25 === 0;
 }
 
 /* One run. `series` controls whether the time series is recorded, which the
    control and the two threshold probes do not need. `onProgress` receives the
    series so far, throttled, while the run is still going. */
-function simulate(cfg, series, onProgress) {
-  const { n, seed, vis, w, eff, reach, noise, cohort } = cfg;
+function simulate(cfg, series, onProgress, includeDiagnostics = false) {
+  const { n, seed, boost = 1, vis, w, eff, reach, noise, cohort } = cfg;
   const rnd = mulberry32((0x9e3779b9 ^ Math.imul(Math.round(seed * 2654435761), 2654435761)) >>> 0);
   const rep = new Float64Array(n);
   const nend = new Float64Array(n);
@@ -36,16 +36,31 @@ function simulate(cfg, series, onProgress) {
   const amp = new Float64Array(n).fill(1);
   const firstDay = new Uint8Array(n);
   for (let i = 0; i < n; i++) quality[i] = rnd();
-  // the first arrivals are drawn at random, not on quality
-  for (let i = 0; i < (seed < n ? seed : n); i++) amp[i] = 0.35 + rnd() * 0.65;
+  // Draw the initial cohort independently of the multiplier. The same seed
+  // therefore gives both plotted runs the same quality and day-one members.
   let cohortN = 0;
   for (let i = 0; i < n; i++) {
     if (rnd() < cohort) { nend[i] = vis; firstDay[i] = 1; cohortN++; }
   }
   if (!cohortN) { nend[0] = vis; firstDay[0] = 1; cohortN = 1; }
+  for (let i = 0; i < n; i++) if (firstDay[i]) amp[i] = boost;
 
-  const out = [];
+  const diagnostics = includeDiagnostics ? {
+    initial: {
+      quality: Array.from(quality),
+      firstDay: Array.from(firstDay),
+      amplification: Array.from(amp),
+    },
+    successCount: 0,
+    failureCount: 0,
+    successfulWeight: 0,
+  } : null;
+
+  const out = series
+    ? [snapshot(0, rep, nend, vis, n, firstDay, cohortN)]
+    : [];
   let top20 = null;
+  let rounds = 0;
 
   /* nend only ever grows, so once somebody clears the visibility threshold they
      stay visible forever. That makes the set of people who can endorse into the
@@ -89,20 +104,31 @@ function simulate(cfg, series, onProgress) {
       const sawTheRealThing = rnd() >= noise;
       const hit = sawTheRealThing ? rnd() < quality[target] : rnd() < 0.33;
       const weight = (1 - w + w * (rep[endorser] * 0.5 < 4 ? rep[endorser] * 0.5 : 4)) * amp[endorser];
+
+      // Every endorsement counts toward visibility. Quality and noise decide
+      // whether the modeled endorsement adds reputation, not whether it exists.
+      nend[target]++;
+      if (!inActive[target] && nend[target] >= vis) {
+        crossing[pending++] = target;
+        inActive[target] = 1;
+      }
       if (hit) {
         rep[target] += weight;
-      } else {
-        nend[target] += weight * 0.2;
-        // did that push them over the line? nobody is added twice
-        if (!inActive[target] && nend[target] >= vis) { crossing[pending++] = target; inActive[target] = 1; }
+        if (diagnostics) {
+          diagnostics.successCount++;
+          diagnostics.successfulWeight += weight;
+        }
+      } else if (diagnostics) {
+        diagnostics.failureCount++;
       }
     }
     for (let c = 0; c < pending; c++) active[activeN++] = crossing[c];
     pending = 0;
+    rounds = t + 1;
 
     if (t === 19) top20 = topOf(rep, nend, vis, n, 0.01);
-    if (series && snapshotAt(t)) {
-      out.push(snapshot(t, rep, nend, vis, n, firstDay, cohortN));
+    if (series && snapshotAt(rounds)) {
+      out.push(snapshot(rounds, rep, nend, vis, n, firstDay, cohortN));
       // hand the curve back mid-flight so the page can draw it as it grows
       if (onProgress && out.length - lastPush >= 8) {
         lastPush = out.length;
@@ -111,12 +137,20 @@ function simulate(cfg, series, onProgress) {
     }
   }
 
-  const last = snapshot(999, rep, nend, vis, n, firstDay, cohortN);
-  if (series) out.push(last);
+  const last = snapshot(rounds, rep, nend, vis, n, firstDay, cohortN);
+  if (series && out[out.length - 1].t !== rounds) out.push(last);
 
   const end = topOf(rep, nend, vis, n, 0.01);
   const keep = top20 && top20.length ? end.filter(i => top20.includes(i)).length / top20.length : null;
-  return { series: out, last, lock: keep };
+  if (diagnostics) {
+    diagnostics.nend = Array.from(nend);
+    diagnostics.rep = Array.from(rep);
+  }
+  return { series: out, last, lock: keep, ...(diagnostics ? { diagnostics } : {}) };
+}
+
+function simulateControl(cfg, includeDiagnostics = false) {
+  return simulate({ ...cfg, reach: 1 }, false, null, includeDiagnostics);
 }
 
 /* The top slice of the visible set, by reputation then by endorsements. */
@@ -165,6 +199,8 @@ function snapshot(t, rep, nend, vis, n, firstDay, cohortN) {
   const cohortShare = cohortRep / total;
   return {
     t, visible: m,
+    cohortCount: cohortN,
+    cohortFraction: cohortN / n,
     share: m ? sorted[0] / total : 0,
     p50, p90,
     top1share: share(Math.max(1, Math.round(m * 0.01))),
@@ -196,10 +232,15 @@ self.onmessage = e => {
   const id = cfg.id;
 
   if (cfg.kind === "control") {
-    const ctl = simulate({ ...cfg, reach: 1, seed: cfg.seed + 7919 }, false);
+    const ctl = simulateControl(cfg);
     self.postMessage({
       id, stage: 3, kind: "control",
-      flat: { capture: ctl.last.capture, visible: ctl.last.visible },
+      flat: {
+        capture: ctl.last.capture,
+        visible: ctl.last.visible,
+        cohortCount: ctl.last.cohortCount,
+        cohortFraction: ctl.last.cohortFraction,
+      },
       lockFlat: ctl.lock,
     });
     return;
@@ -213,8 +254,8 @@ self.onmessage = e => {
       capHigh: at({ vis: 12 }),
       capThin: at({ cohort: 0.02 }),
       capFat: at({ cohort: 0.6 }),
-      capAmpLo: at({ seed: 1 }),
-      capAmpHi: at({ seed: 300 }),
+      capAmpLo: at({ boost: 1 }),
+      capAmpHi: at({ boost: 3 }),
     });
     return;
   }

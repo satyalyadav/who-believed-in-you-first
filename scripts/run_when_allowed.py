@@ -7,21 +7,19 @@ except patience: probe one known-good document every couple of minutes and only
 start the crawl once the door opens again. Everything runs slowly enough to stay
 under the limit.
 """
+import argparse
 import os
 import subprocess
 import sys
 import time
 import urllib.error
 import urllib.request
+from fetch_formd import configure_contact
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROBE = "https://www.sec.gov/Archives/edgar/data/2143346/000214334626000001/primary_doc.xml"
-HEADERS = {
-    "User-Agent": "WhoBelievedInYouFirst research@example.com",
-    "Accept-Encoding": "gzip",
-    "Accept": "*/*",
-}
-SAMPLE = int(os.environ.get("DROP_SAMPLE", "1200"))
+HEADERS = {}
+SAMPLE = int(os.environ.get("DROP_SAMPLE", "1500"))
 PACE = os.environ.get("DROP_PACE", "1.2")
 WORKERS = os.environ.get("DROP_WORKERS", "2")
 
@@ -38,6 +36,18 @@ def probe():
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--contact", help="operator contact email for the SEC User-Agent (or set DROP_SEC_CONTACT)")
+    args = ap.parse_args()
+    try:
+        user_agent = configure_contact(args.contact)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+    HEADERS.update({
+        "User-Agent": user_agent,
+        "Accept-Encoding": "gzip",
+        "Accept": "*/*",
+    })
     waited = 0
     while True:
         code = probe()
@@ -55,7 +65,10 @@ def main():
         "--workers", WORKERS, "--pace", PACE, "--tries", "12",
     ]
     print("[runner] " + " ".join(cmd), flush=True)
-    os.execvp(cmd[0], cmd)
+    env = os.environ.copy()
+    if args.contact:
+        env["DROP_SEC_CONTACT"] = args.contact
+    os.execvpe(cmd[0], cmd, env)
 
 
 if __name__ == "__main__":

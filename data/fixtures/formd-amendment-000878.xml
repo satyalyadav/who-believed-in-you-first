@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Source excerpt captured from the SEC filing at source-url below on 2026-09-27.
+  The sourceExcerpt wrapper records provenance; offeringData is the original
+  subtree containing the previous-accession field.
+-->
+<sourceExcerpt
+  accession="0001012975-26-000878"
+  cik="2152949"
+  source-url="https://www.sec.gov/Archives/edgar/data/2152949/000101297526000878/primary_doc.xml">
+  <offeringData>
+    <typeOfFiling>
+      <newOrAmendment>
+        <isAmendment>true</isAmendment>
+        <previousAccessionNumber>0001012975-26-000877</previousAccessionNumber>
+      </newOrAmendment>
+    </typeOfFiling>
+  </offeringData>
+</sourceExcerpt>

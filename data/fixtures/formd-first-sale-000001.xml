@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Minimal offline parser fixture, not a copy of the full SEC XML filing.
+  It retains the Item 3 and Item 7 values visible in the SEC-rendered filing.
+  Source: https://www.sec.gov/Archives/edgar/data/2111089/000211108926000001/xslFormDX01/primary_doc.xml
+-->
+<edgarSubmission accession="0002111089-26-000001" cik="2111089">
+  <primaryIssuer>
+    <entityName>Mangrove Therapeutics Inc.</entityName>
+  </primaryIssuer>
+  <relatedPersonsList>
+    <relatedPersonInfo>
+      <relatedPersonName>
+        <firstName>Benjamin</firstName>
+        <middleName>Zhiyi</middleName>
+        <lastName>Chen</lastName>
+      </relatedPersonName>
+    </relatedPersonInfo>
+  </relatedPersonsList>
+  <offeringData>
+    <typeOfFiling>
+      <newOrAmendment>
+        <isAmendment>false</isAmendment>
+      </newOrAmendment>
+      <dateOfFirstSale>
+        <value>2026-07-21</value>
+        <yetToOccur>false</yetToOccur>
+      </dateOfFirstSale>
+    </typeOfFiling>
+  </offeringData>
+</edgarSubmission>

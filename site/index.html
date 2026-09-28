@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Who believed in you first?</title>
-<meta name="description" content="Cosign launched on 25 September promising a public record of who backed whom. The US record of who backs whom already exists, and it is filed every day. Here is what is in it.">
+<meta name="description" content="Cosign's public professional endorsements and SEC Form D notices record different things. Explore a sample of issuer-side related persons and aggregate investor counts.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
@@ -12,13 +12,13 @@
 </head>
 <body>
 
-<div class="chrome mono">
+<header class="chrome mono" role="banner">
   <span><b>Who believed in you first</b></span>
   <span class="sp"></span>
-  <span class="idx" id="chrome-idx">item 1 of 7</span>
+  <span class="idx" id="chrome-idx">Section 1 of 7</span>
   <span class="sp"></span>
-  <span class="idx" id="chrome-stat">EDGAR Form D, July to September 2026</span>
-</div>
+  <span class="idx" id="chrome-stat">Sample ends 26 September 2026 · partial quarter</span>
+</header>
 
 <div class="wrap">
 
@@ -27,7 +27,7 @@
     <div class="meta">
       <div id="rail-n"></div>
       <div>SEC EDGAR, primary_doc.xml</div>
-      <div>crawled <span id="rail-date"></span></div>
+      <div>sample ends 26 Sep 2026</div>
     </div>
   </nav>
 
@@ -46,31 +46,33 @@
       <div class="hero-grid">
         <div>
           <h1>Who believed in you&nbsp;first?</h1>
-          <p class="stand">Cosign went live on 25 September with a promise: a public
-            record of who backed whom, kept by the people who did the backing.
-            The United States has been publishing its own version of that record
-            since 2001, and in machine-readable form since 2009. It is thinner
-            than the pitch, and the shape of the gap is the interesting part.</p>
-          <p class="byline mono">Built from <span id="by-f">&#8230;</span> Form D filings pulled
-            straight off EDGAR and parsed by hand. No enrichment layer, no paid
+          <p class="stand">Cosign presents public, attributed professional
+            endorsements and a separate private intent signal. SEC Form D notices
+            record issuer-side related persons and an aggregate investor count.
+            This sample shows what each record can and cannot answer.</p>
+          <p class="byline mono">Built from <span id="by-f">&#8230;</span> EDGAR daily-index rows covering
+            <span id="by-acc">&#8230;</span> unique accession numbers across Form D and Form D/A, parsed
+            locally from EDGAR records. Some accessions appear under multiple
+            CIKs; row-based figures count each index row. No enrichment layer, no paid
             database, and no language model anywhere in the data path. The model
-            in Item 6 is a model of a mechanism, not of this data. Every figure
-            here is recomputed from the filings by a second script that shares no
-            code with the one that wrote this page, and the two fail loudly when
-            they stop agreeing.</p>
+            in section 6 of this page is hypothetical, not a description of Cosign. A
+            separate verifier independently recomputes the data-derived figures
+            from filing records; it also runs focused parser and cache regression
+            checks. Simulation outputs are checked separately against reference
+            results.</p>
         </div>
         <div id="hero-form"></div>
       </div>
     </div>
 
-    <!-- ============================================================ item 1 -->
+    <!-- ============================================================ section 1 -->
     <section id="s1">
-      <h2 class="with-no"><span class="item-no">Item 1</span><span>The pitch, in their words</span></h2>
-      <p>Cosign is a curated professional network for the people and companies
+      <h2 class="with-no"><span class="item-no">Section 1</span><span>The pitch, in their words</span></h2>
+      <p>Cosign describes itself as a curated professional network for the people and companies
         that drive the startup ecosystem, made by Andreessen Horowitz and
         introduced by Erik Torenberg and David Booth on 25 September 2026. MTS
         described the same day as "Wikipedia meets LinkedIn meets AngelList." The
-        homepage headline is two words longer than that:
+        homepage puts it this way:
         <em class="term">Believe in someone, first.</em></p>
 
       <blockquote>
@@ -80,263 +82,271 @@
           <a class="src" href="https://cosign.co" target="_blank" rel="noopener">cosign.co</a></cite>
       </blockquote>
 
-      <p>Strip the design language out and the mechanism is a signed
-        endorsement: a named person attaches their name and standing to another
-        person's record, the endorsement is attributed and permanent rather than
-        a like that scrolls away, and the endorser is paid in visibility for
-        finding people early. A second quote on the same page does the work of
-        a spec: <em class="term">attributable context from people who have
-        worked together.</em></p>
+      <p>The public profile layer presents attributed professional endorsements
+        from people who have worked together. The launch copy also describes an
+        early-discovery angle. It does not establish how profiles are ranked,
+        whether an endorsement changes visibility, or how recommendations work.</p>
 
-      <p>There are two layers to this and the gap between them is the rest of
-        this page. The cosigns on a profile are public and attributed, which is
-        the half the homepage sells. Underneath sits what the founders call an
-        intent network, where members
-        <em class="term">privately signal who you'd fund or work with</em> and
-        hear back when the interest is mutual. That signal is not published, by
-        design, and it is exactly the part of a reputation system that would be
-        worth the most to anyone reading it.
+      <p>The launch materials also describe a separate intent network where
+        members privately signal who they might fund or work with. That is a
+        different kind of information from Form D's public issuer notice. Neither
+        record can stand in for the other.
         <a class="src" href="https://x.com/MTSlive/status/2103504351797092668"
            target="_blank" rel="noopener">MTS announcement</a>
         <a class="src" href="https://app.dealroom.co/news/note/a16z-launches-cosign-a-curated-professional-network-for-the-startup-community"
            target="_blank" rel="noopener">Dealroom on the launch</a></p>
 
-      <p>So the product is a registry of conviction, with the public half shown
-        and the valuable half private. Who believed in whom, who was willing to
-        say so, and who was early. The paper version of that record is already
-        public and nobody has built anything on top of it, which is convenient
-        for anyone building this one.</p>
+      <p>Form D does not document endorsements or identify investors. It names
+        certain people associated with the issuer and separately reports an
+        investor total. This investigation follows that issuer-side record
+        without treating it as evidence of who endorsed or invested in whom.</p>
     </section>
 
-    <!-- ============================================================ item 2 -->
+    <!-- ============================================================ section 2 -->
     <section id="s2">
-      <h2 class="with-no"><span class="item-no">Item 2</span><span>The government already files it</span></h2>
-      <p>Rule 506 of Regulation D lets a US company sell securities without
-        registering them, as much as it likes, provided it meets one of two sets
-        of conditions. Under 506(b) it may not advertise, and it may sell to any
-        number of accredited investors plus up to 35 others who are financially
-        sophisticated. Under 506(c) it may advertise freely, provided every single
-        purchaser is accredited and the company takes reasonable steps to verify
-        it. <span class="src" href="https://www.sec.gov/answers/rule506.htm"
-        target="_blank" rel="noopener">investor.gov</span></p>
-      <p>The price of either exemption is a notice on Form D, filed with the SEC
-        no later than 15 days <em class="term">after</em> the first sale.
-        <span class="src" href="https://www.sec.gov/Archives/edgar/vprr/0201/02014640.pdf"
-        target="_blank" rel="noopener">the form says so on page one</span> That
-        timing is the whole of Item 5 in one sentence: by the time the form is
-        filed the money is already committed, and the form still records only
-        how many people were in, never who they were.</p>
-      <p>It asks for the company's officers, directors and promoters by name. It
+      <h2 class="with-no"><span class="item-no">Section 2</span><span>What Form D records</span></h2>
+      <p>Rule 506 of Regulation D provides an exemption from registration when
+        the issuer meets the rule's conditions. Under 506(b), the issuer may not
+        use general solicitation or general advertising. It may sell to any
+        number of accredited investors and up to 35 non-accredited purchasers in
+        any 90-calendar-day period
+        who, alone or with a purchaser representative, can evaluate the
+        investment's merits and risks; the issuer may reasonably believe this
+        condition is met. Under 506(c), general solicitation is permitted if
+        every purchaser is accredited and the issuer takes reasonable steps to
+        verify accredited status. See the <a class="src"
+        href="https://www.sec.gov/resources-small-businesses/exempt-offerings/private-placements-rule-506b"
+        target="_blank" rel="noopener">SEC Rule 506 guidance</a> and
+        <a class="src" href="https://www.ecfr.gov/current/title-17/chapter-II/part-230/section-230.506"
+        target="_blank" rel="noopener">17 CFR 230.506</a>.</p>
+      <p>The SEC says a new Form D notice is due within 15 calendar days after
+        first sale. If that deadline falls on a Saturday, Sunday, or holiday, it
+        moves to the next business day. An amendment may be required for specific
+        changes or annually while an offering continues. For this purpose, the first sale is when
+        the first investor is irrevocably contractually committed. The notice is required, but the SEC
+        staff says filing it is not a condition to the availability of the Rule
+        504 or Rule 506 exemption; Rule 507 describes potential consequences for
+        noncompliance. See the <a class="src"
+        href="https://www.sec.gov/resources-small-businesses/exempt-offerings/filing-form-d-notice"
+        target="_blank" rel="noopener">SEC filing guide</a> and the SEC's
+        <a class="src"
+        href="https://www.sec.gov/about/divisions-offices/division-corporation-finance/frequently-asked-questions-answers-form-d"
+        target="_blank" rel="noopener">Form D FAQ</a> and the SEC's
+        <a class="src"
+        href="https://www.sec.gov/rules-regulations/staff-guidance/corporation-finance-interpretations/securities-act-rules"
+        target="_blank" rel="noopener">Securities Act interpretations</a>.</p>
+      <p>It asks for the issuer's related persons, including officers, directors
+        and promoters, by name. It
         asks what industry it is in, what it is raising, how much it has sold,
-        what the securities are, which exemption is being used, and how many
-        people had already bought by the time it filed. It is one of the denser
-        documents American corporate law produces and almost nobody opens. Here
-        are five of them from the sample, unmodified, so you can see what the
+        what the securities are, which exemption is being used, and the total
+        number of investors it reported. The <a class="src"
+        href="https://www.sec.gov/files/formd.pdf" target="_blank"
+        rel="noopener">official form</a> lists its fields. Here are five sample
+        filings rendered from parsed data, so you can see what the
         same page looks like when the issuer is a biotech, an insurer, a
         property vehicle and a fund. The three rows with a warm tint are the ones
-        this story turns on: what was offered, what was sold, and how many people
-        had already bought. The last of those is a count with no names attached,
-        which is the whole of Item 5.</p>
+        this story turns on: what was offered, what was sold, and the reported
+        investor total. The last of those is a count with no names attached,
+        which is the focus of this chapter.</p>
+      <p class="small">The cache preserves <span id="yet-sale-n">&#8230;</span>
+        sampled EDGAR index rows that explicitly mark the first sale as yet to
+        occur. Other first-sale dates were not captured in the current cache,
+        so filing cards label those dates unverified.</p>
 
       <div id="anatomy"></div>
 
       <h3>What the form gives you</h3>
-      <p>Every issuer, its officers and directors, its industry bucket, the size
-        of the raise, the securities, the exemption, and a date. Join it to the
-        next filing from the same CIK and you get a timeline. This is enough to
-        build a company directory, a sector map, a round-size index and a
-        people index. It is genuinely useful and it took no AI.</p>
+      <p>It gives an issuer's related-person list, industry, offering amount,
+        amount sold, securities, claimed exemption, investor total, and dates.
+        Matching notices by CIK groups them by issuer, but does not establish that
+        multiple notices belong to the same offering. Those fields support a
+        directory, sector breakdown, and issuer-side name graph.</p>
 
-      <h3>What it does not give you</h3>
-      <p>It does not ask who the investors were. Not one field. There is a place
-        on the form to say how many people had already bought, and no place at
-        all to say who any of them were. The count is in the public record. The
-        vouching is not. That single omission is the subject of the rest of this
-        page.</p>
+      <h3>What the form does not give you</h3>
+      <p>Form D reports an aggregate investor count in a separate item; it does
+        not provide investor names. Its related-person list is not an endorsement
+        list, and the filing does not say whether a listed person also invested.</p>
     </section>
 
-    <!-- ============================================================ item 3 -->
+    <!-- ============================================================ section 3 -->
     <section id="s3">
-      <h2 class="with-no"><span class="item-no">Item 3</span><span>Two thirds of it is not startups</span></h2>
+      <h2 class="with-no"><span class="item-no">Section 3</span><span>Two thirds of issuers are funds</span></h2>
       <p id="dir-intro">Loading the crawl.</p>
-      <p>Form D is filed by anything selling securities under Regulation D, which
-        includes a great many things that are not companies trying to raise a seed
-        round. In this sample <span class="mono" id="fund-n"></span> of
-        <span class="mono" id="iss-n"></span> filings are pooled investment funds
-        filing under names that read like product companies, and the rest are
-        operating companies.</p>
-      <p>Even that third is not what a startup directory means.
-        <span class="mono" id="co-tech"></span> of the
-        <span class="mono" id="co-n"></span> are technology, health care, business
-        services or manufacturing. The other
-        <span class="mono" id="co-other"></span> are property vehicles, banks,
-        insurers, energy companies, restaurants and investment vehicles. Real
-        businesses, most of them, and none of them what cosign is for. A directory
-        of the startup ecosystem built on this feed throws away two thirds of it
-        and then has to be careful about most of the rest.</p>
+      <p>Form D is filed for offerings under several exemptions, including
+        Regulation D. In this sample <span class="mono" id="fund-n"></span> of
+        <span class="mono" id="iss-n"></span> distinct issuer CIKs are pooled
+        investment funds; the rest are non-fund issuers.</p>
+      <p>A non-fund issuer profile does not by itself identify a startup. Of the
+        <span class="mono" id="co-n"></span> non-fund issuer profiles,
+        <span class="mono" id="co-tech"></span> fall into technology, health
+        care, business services or manufacturing groups. The other
+        <span class="mono" id="co-other"></span> include issuers in the broad
+        “Other” group, property vehicles, banks, insurers, energy companies and
+        restaurants. These labels alone do not establish whether an issuer is
+        a startup.</p>
 
       <svg class="bars" id="split-chart" viewBox="0 0 420 54" role="img"
-           aria-label="Share of the sample that is pooled investment funds"></svg>
+           aria-label="Share of sampled issuer CIK profiles that are pooled investment funds"></svg>
 
-      <p class="note">Every operating-company filing in the sample, searchable.
-        Click any row to open the filing. Click a person's name to see every other
-        company they are named on. Amounts are what the issuer reported as sold by
-        its most recent filing, not a valuation, and <span class="mono"
-        id="noamount"></span> of the funds report no amount at all.</p>
+      <p class="note">One profile per non-fund CIK, searchable. CIK-attributed
+        related-person name keys are unioned across sampled filings; other profile
+        values come from its latest sampled row. If an accession appears under
+        multiple CIKs, its amounts and investor total are joint-offering values
+        that can repeat across rows. Its Item 3 names are shown separately in the
+        details and are not assigned to each CIK. Secondary CIK names from the
+        EDGAR index show an ellipsis and may be truncated; the index caps names
+        at 55 characters. Use the details button to inspect the profile;
+        issuer names link to EDGAR.
+        A person's button filters to issuer profiles where that normalized name
+        appears. A starred investor count of 0 may be an explicit zero or a
+        blank the earlier parser stored as zero. Amounts are reported as sold in the latest sampled filing, not a valuation, and <span class="mono"
+        id="noamount"></span> fund profiles report no amount in their latest sampled filing.</p>
 
       <div class="ctl mono">
         <input type="search" id="q" placeholder="search issuer, person, accession" aria-label="Search the directory">
         <select id="f-ind" aria-label="Filter by industry"><option value="">every industry</option></select>
-        <select id="f-sort" aria-label="Sort">
+        <select id="f-sort" aria-label="Sort issuer profiles">
           <option value="d">filed, newest first</option>
           <option value="d-asc">filed, oldest first</option>
           <option value="d$">amount sold, largest first</option>
           <option value="d$-asc">amount sold, smallest first</option>
-          <option value="k">backers already in, most first</option>
-          <option value="n">issuer name</option>
+          <option value="k">investor count, highest first</option>
+          <option value="k-asc">investor count, lowest first</option>
+          <option value="n">issuer name, A to Z</option>
+          <option value="n-desc">issuer name, Z to A</option>
         </select>
-        <button class="b" id="f-kind" aria-pressed="true">operating companies only</button>
-        <button class="b" id="f-people" aria-pressed="false">named people only</button>
+        <button class="b" id="f-kind" aria-pressed="true">non-fund issuer profiles only</button>
+        <button class="b" id="f-people" aria-pressed="false">person-name heuristic matches only</button>
       </div>
-      <div class="ctl-result mono" id="dir-count"></div>
+      <div class="ctl-result mono" id="dir-count" role="status" aria-live="polite" aria-atomic="true"></div>
 
-      <div class="dirwrap">
-        <div class="scroller">
+      <div class="dirwrap scroller" role="region" aria-label="Issuer directory results" tabindex="0">
           <table class="dir">
-            <caption class="sr">Form D filings filed between 1 July and 26 September 2026</caption>
+            <caption class="sr">Latest sampled Form D or Form D/A notice profile for each non-fund CIK between 1 July and 26 September 2026</caption>
             <thead><tr>
-              <th data-sort="f" scope="col">filed</th>
-              <th data-sort="n" scope="col">issuer</th>
-              <th data-sort="g" scope="col">industry</th>
-              <th data-sort="n" scope="col">officers, directors, promoters</th>
-              <th class="num" data-sort="d$" scope="col">sold</th>
-              <th class="num" data-sort="k" scope="col">backers in</th>
-              <th data-sort="i" scope="col">accession</th>
+              <th scope="col" aria-sort="descending"><button class="sort" type="button" data-sort="d">filed</button></th>
+              <th scope="col"><button class="sort" type="button" data-sort="n">issuer</button></th>
+              <th scope="col">industry</th>
+              <th scope="col">issuer-related names</th>
+              <th class="num" scope="col"><button class="sort" type="button" data-sort="d$">amount sold</button></th>
+              <th class="num" scope="col"><button class="sort" type="button" data-sort="k">latest filing investor count</button></th>
+              <th scope="col">accession</th>
             </tr></thead>
             <tbody id="dir-body"></tbody>
           </table>
           <div class="empty" id="dir-empty" hidden>Nothing matches. Try a shorter search.</div>
-        </div>
       </div>
 
-      <div id="dir-detail"></div>
+      <div id="dir-detail" aria-live="polite"></div>
     </section>
 
-    <!-- ============================================================ item 4 -->
+    <!-- ============================================================ section 4 -->
     <section id="s4">
-      <h2 class="with-no"><span class="item-no">Item 4</span><span>The graph you cannot build from it</span></h2>
-      <p id="graphtext">Pull the named people out of those filings and draw an
-        edge from each person to every company they were named on. That is the
-        endorsement graph, minus the endorsements, taken from the one structured
-        US feed that covers every Regulation D raise, names the people behind it,
-        and never names the investors.</p>
+      <h2 class="with-no"><span class="item-no">Section 4</span><span>An issuer-related-person graph</span></h2>
+      <p id="graphtext">This graph connects normalized names from CIK-attributed
+        Form D related-person lists to issuer CIKs. Names from accessions listed
+        under multiple CIKs are omitted: Item 3 may cover any issuer on the notice
+        and the structured list does not allocate a person to a particular CIK.
+        Those joint names remain visible in directory details without CIK
+        attribution. The graph describes issuer-side filing roles; it does not
+        show professional endorsements or investor identity.</p>
       <p id="graphverdict" class="finding"></p>
 
       <div class="charts">
         <div class="chart">
-          <h4>How many issuers each named person appears on</h4>
+          <h3>How many issuers each normalized name appears on</h3>
           <svg class="bars" id="deg-chart" viewBox="0 0 420 200" role="img"
-               aria-label="Operating-company filings: distribution of how many companies each named person appears on"></svg>
+               aria-label="Non-fund issuer CIK profiles: distribution of how many issuer profiles each normalized name appears on"></svg>
           <p class="legend" id="deg-legend"></p>
         </div>
         <div class="chart">
-          <h4>The same, counting the funds as well</h4>
+          <h3>The same, counting pooled funds as well</h3>
           <svg class="bars" id="deg-all-chart" viewBox="0 0 420 200" role="img"
-               aria-label="All filings: distribution of how many issuers each named person appears on"></svg>
+               aria-label="All issuer CIK profiles: distribution of how many issuer profiles each normalized name appears on"></svg>
           <p class="legend" id="deg-all-legend"></p>
         </div>
       </div>
 
-      <h3>The people who do appear twice</h3>
-      <p>These are the only names in the sample that connect two filings, and on
-        the operating companies the list is short enough to read out loud. The
-        table on the right is all of it. Across the whole corpus the only names
-        that recur on any scale are administrative, and the filings themselves say
-        so: the top nine repeat names describe themselves as an agent of the
-        general partner, the general partner itself, an administrator, or an
-        officer of the issuer's administrator. Not one of the nine describes
-        themselves as an investor, because there is no box on the form for it.
-        The government record of American startup capital is dense with
-        signature agents and empty of investors.</p>
-      <p>Nor are the operating-company repeaters startup people. Counted by how
-        many of the repeat names sit in each industry, the ranking is on the
-        right. It leads with property, energy and unclassified vehicles, and
-        biotechnology only makes the top ten. These are the people who end up on
-        more than one board in the same quarter, and in a quarter of American
-        private capital that is a property and energy crowd rather than a
-        founder crowd.</p>
+      <h3>CIK-attributed names reported on multiple profiles</h3>
+      <p>The table lists normalized names reported on more than one non-fund CIK
+        in accessions that can be attributed to the filing's primary issuer CIK.
+        Many highly repeated entries have roles such as filing agent, general
+        partner, administrator, or an officer of an issuer's administrator. The
+        filing reports those issuer-side roles. Its separate investor total does
+        not establish whether a listed person also invested.</p>
+      <p>Each repeated normalized person name contributes one link for each
+        non-fund issuer CIK profile where it appears in a CIK-attributed filing.
+        The table groups those
+        links by the profile's latest sampled industry. It describes this
+        sample's mix of issuer categories; it does not identify whether a
+        person is a founder, investor, or startup operator.</p>
 
       <div class="charts">
         <div class="chart">
-          <h4>Most frequent names anywhere in the sample</h4>
+          <h3>Most frequent CIK-attributed names in the sample</h3>
           <svg class="bars" id="agent-chart" viewBox="0 0 420 260" role="img"
-               aria-label="Most frequently named parties across the sample"></svg>
+               aria-label="Most frequently named parties in CIK-attributed Form D rows, excluding shared accession lists"></svg>
         </div>
         <div class="chart">
-          <h4>What the repeat names do</h4>
-          <div class="dirwrap" style="border:0;max-height:290px">
-            <div class="scroller">
+          <h3>Industries where repeat names appear</h3>
+          <div class="dirwrap scroller repeat-scroll" role="region" aria-label="Industries where repeat names appear" tabindex="0" style="border:0;max-height:290px">
               <table class="dir">
                 <thead><tr>
                   <th scope="col">industry the repeat name is named in</th>
-                  <th class="num" scope="col">names</th>
+                  <th class="num" scope="col">repeated-name links</th>
                 </tr></thead>
                 <tbody id="rep-ind"></tbody>
               </table>
-            </div>
           </div>
         </div>
         <div class="chart">
-          <h4>Every repeat name on an operating company</h4>
-          <div class="dirwrap" style="max-height:290px;border:0">
-            <div class="scroller">
+          <h3>Normalized names reported on multiple non-fund CIKs</h3>
+          <div class="dirwrap scroller repeat-scroll" role="region" aria-label="Names reported on more than one non-fund issuer CIK" tabindex="0" style="max-height:290px;border:0">
               <table class="dir" id="rep-table">
                 <thead><tr>
-                  <th scope="col">named person</th>
-                  <th class="num" scope="col">filings</th>
+                  <th scope="col">normalized name</th>
+                  <th class="num" scope="col">issuer CIK profiles</th>
                   <th scope="col">role given</th>
                   <th scope="col">named on</th>
                 </tr></thead>
                 <tbody id="rep-body"></tbody>
               </table>
-            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ============================================================ item 5 -->
+    <!-- ============================================================ section 5 -->
     <section id="s5">
-      <h2 class="with-no"><span class="item-no">Item 5</span><span>The one field that counts backers</span></h2>
+      <h2 class="with-no"><span class="item-no">Section 5</span><span>The separate investor count</span></h2>
       <p>Form D has a box, near the bottom, that asks for the total number of
         investors who had already invested in the offering by the time the filing
-        was made. Not one operating company in the sample leaves it blank.
-        <span class="mono" id="bk-report"></span> report at least one backer and
-        the other <span class="mono" id="bk-zero"></span> report zero, which on
-        this form means the first sale had not happened yet. Among the ones that
-        report, the shape is bimodal rather than a long tail.
-        <span class="mono" id="bk-bands"></span> One person writing the whole
-        thing, or a small syndicate, with very little in between. Both ends of
-        that are the part of the market nobody has ever needed a directory
-        for.</p>
-      <p>So the number of people who believed in a startup is on the public
-        record, and who they were is not. The form will tell you the shape of a
-        cap table at the granularity of a count, and nothing else. Cosign is
-        building the missing half as a product, which is either an obvious gap
-        or a business model, depending on how you squint.</p>
+        was made. The positive counts in the cache are known. An earlier parser
+        stored blank fields as zero, so the cached zeros may be explicit zeros or
+        prior blanks; their exact split is unknown because the cache was not
+        refreshed. <span class="mono" id="bk-report"></span> The chart below
+        shows positive counts only. Among those rows, the distribution has a
+        larger group at one and another at eleven or more.
+        <span class="mono" id="bk-bands"></span></p>
+      <p>This is a reported total for an offering. It does not identify investors
+        or describe their allocations. It also does not show whether a person in
+        the issuer-related-person list invested.</p>
+      <p>The amount-sold-per-investor statistic below is aggregate amount sold
+        divided by the reported investor count. It is not an observed individual
+        check size or a reconstruction of an issuer's capitalization.</p>
 
       <div class="charts">
         <div class="chart">
-          <h4>Investors already in, at the moment of filing</h4>
+          <h3>Positive investor counts in filing rows</h3>
           <p class="sub" id="ninv-sub"></p>
           <svg class="bars" id="ninv-chart" viewBox="0 0 420 210" role="img"
-               aria-label="Distribution of the number of investors a filing reported"></svg>
+               aria-label="Distribution of positive investor counts recorded in filing rows"></svg>
         </div>
         <div class="chart">
-          <h4>Reported amount sold per reported backer</h4>
+          <h3>Amount sold divided by reported investor count</h3>
           <p class="sub" id="check-sub"></p>
           <svg class="bars" id="check-chart" viewBox="0 0 420 250" role="img"
-               aria-label="Distribution of implied average cheque size"></svg>
+               aria-label="Distribution of aggregate amount sold divided by reported investor count"></svg>
           <p class="legend" id="check-legend"></p>
         </div>
       </div>
@@ -344,69 +354,76 @@
       <p id="blank-note" class="finding"></p>
     </section>
 
-    <!-- ============================================================ item 6 -->
+    <!-- ============================================================ section 6 -->
     <section id="s6">
-      <h2 class="with-no"><span class="item-no">Item 6</span><span>What a reputation layer inherits</span></h2>
-      <p>Everything above describes a record that mostly does not exist. The
-        reasonable response from a product team is to build it, and to seed it
-        with the people who are already credible, which is what a curated
-        network is. The next question is what happens next, and that one you can
-        answer without any data at all, because it is a property of the
-        mechanism rather than of the market.</p>
-      <p>Below is a model of the mechanism cosign describes, in the simplest
-        form that still has the feature that matters. A set of people. Some of
-        them can endorse. An endorsement is attributed and durable. Profiles
-        below a threshold of endorsements are invisible in search. Reputation
-        weights an endorsement, so being endorsed by someone well endorsed is
-        worth more. Early endorsers are rewarded with reach, which cosign's own
-        copy promises: make discoveries before anyone else.</p>
-      <p>Run it for a few hundred rounds and look at the concentration. Then move
-        each dial and watch which ones matter, because the ranking is not the one
-        you would guess. How many people are already credible when the doors open
-        is the largest effect on the panel by a distance. The visibility threshold
-        is the number a product team argues about most, and it is real, but it is
-        second. The dial that sounds most like a product decision, amplifying the
-        early endorsers, barely moves it at all. The paragraph under the chart
-        measures all three at both ends of their sliders on every redraw.</p>
+      <h2 class="with-no"><span class="item-no">Section 6</span><span>A hypothetical network model</span></h2>
+      <p>This section is a simulation, not a description of Cosign's actual
+        product or user behavior. The checked launch copy supports attributed
+        professional endorsements and an early-discovery angle; it does not
+        document ranking, visibility thresholds, reputation weighting, or extra
+        reach for early endorsers.</p>
+      <p>For a sensitivity exercise, the model assumes a set of people, some of
+        whom can endorse; a visibility threshold; an endorsement weight based on
+        the endorser's modeled reputation; a multiplier on endorsement weight
+        for members of the day-one cohort; and traffic divided between discovery
+        and social proof. Each day-one member starts with exactly the visibility
+        threshold's number of endorsements, so they begin visible. Every modeled
+        endorsement counts toward visibility; the seeded quality and noise draws
+        decide whether it adds reputation. These are explicit model assumptions.
+        Results describe
+        what follows from these choices, not how Cosign ranks profiles or
+        distributes visibility. The plotted runs share the same deterministic
+        seed, quality draw, and day-one cohort; the dashed run changes discovery
+        flow only.</p>
+      <p>Move each dial to compare outcomes inside the simulation. The ranges
+        below report its parameter sweeps; they are not measurements of Cosign or
+        claims about how its product works.</p>
 
       <div class="panel" id="sim-panel">
         <div class="panel-head">
-          <span class="t">endorsement model</span>
+          <span class="t">hypothetical endorsement model</span>
           <span class="sp"></span>
           <span id="sim-status">running</span>
         </div>
         <div class="sim">
           <div class="knobs">
             <div class="knob">
-              <label for="k-co">visible on day one <b id="v-co">25%</b></label>
+              <label for="k-co">starting cohort share <b id="v-co">25%</b></label>
               <input type="range" id="k-co" min="2" max="60" step="1" value="25">
-              <div class="hint">share of the network already credible when it opens</div>
+              <div class="hint">share of profiles assigned to the starting cohort in this model</div>
             </div>
             <div class="knob">
-              <label for="k-n">people in the network <b id="v-n">2000</b></label>
+              <label for="k-n">profiles in modeled network <b id="v-n">2000</b></label>
               <input type="range" id="k-n" min="500" max="6000" step="100" value="2000">
             </div>
             <div class="knob">
-              <label for="k-seed">early endorsers get amplified <b id="v-seed">20</b></label>
+              <label for="k-seed">deterministic draw seed <b id="v-seed">20</b></label>
               <input type="range" id="k-seed" min="1" max="300" step="1" value="20">
+              <div class="hint">changes the model's repeatable quality and cohort draw</div>
             </div>
             <div class="knob">
-              <label for="k-vis">endorsements to be visible <b id="v-vis">3</b></label>
+              <label for="k-boost">day-one cohort endorsement boost <b id="v-boost">1.50×</b></label>
+              <input type="range" id="k-boost" min="1" max="3" step="0.1" value="1.5">
+              <div class="hint">multiplier applied only to endorsement weight from day-one cohort members</div>
+            </div>
+            <div class="knob">
+              <label for="k-vis">modeled endorsements to become visible <b id="v-vis">3</b></label>
               <input type="range" id="k-vis" min="1" max="12" step="1" value="3">
             </div>
             <div class="knob">
-              <label for="k-w">reputation weight <b id="v-w">0.85</b></label>
+              <label for="k-w">modeled weight on endorser reputation <b id="v-w">0.85</b></label>
               <input type="range" id="k-w" min="0" max="0.98" step="0.01" value="0.85">
-              <div class="hint">0 is one person one vote; higher makes the endorser's standing count for more</div>
+              <div class="hint">0 gives equal base weight before the cohort boost; higher values give more weight to endorsers with more accumulated reputation</div>
             </div>
             <div class="knob">
-              <label for="k-rr">share of flow that is discovery <b id="v-rr">0.30</b></label>
+              <label for="k-rr">modeled flow assigned to discovery <b id="v-rr">0.30</b></label>
               <input type="range" id="k-rr" min="0.02" max="1" step="0.02" value="0.30">
               <div class="hint">the rest is social proof: seen because you look worth seeing</div>
             </div>
             <div class="knob">
-              <label for="k-eff">endorsements per person per round <b id="v-eff">0.06</b></label>
+              <label for="k-eff">network-wide endorsement rate per profile per round <b id="v-eff">0.06</b></label>
               <input type="range" id="k-eff" min="0.005" max="0.4" step="0.005" value="0.06">
+              <div class="hint">each round, the model creates floor(profiles × rate) endorsement events across the whole network</div>
             </div>
             <div class="knob">
               <label for="k-noise">endorsements unrelated to quality <b id="v-noise">0.50</b></label>
@@ -415,22 +432,19 @@
           </div>
           <div class="stage">
             <canvas id="sim-canvas" width="760" height="340"
-                    role="img" aria-label="How the reputation held by the day-one cohort decays over rounds of endorsements, against a run where every endorsement arrives through discovery"></canvas>
+                    role="img" aria-label="How the share of modeled score held by the starting cohort changes over endorsement rounds, against a run where every endorsement arrives through discovery"></canvas>
             <div class="legend" id="sim-legend"></div>
             <div class="acts">
               <button id="sim-run">next seed</button>
               <button id="sim-shuffle">random seed</button>
             </div>
             <p class="legend" style="color:var(--panel-dim);margin-top:10px">
-              Both lines are the day-one cohort's reputation measured against its
-              share of the network, so 1x is parity and anything above it is a
-              head start the mechanism never gives back. The solid line is a run
-              with social proof in it. The dashed line is the same network with
-              every endorsement arriving through discovery instead, which is the
-              control. At the defaults it sits on parity, and that is the finding:
-              with nothing compounding, a head start is worth nothing. Raise the
-              threshold far enough and even the control lifts, because past a
-              point the threshold alone decides who is seen.
+              Both lines show the starting cohort's share of total modeled score
+              relative to its share of profiles; 1x is parity. Score is earned
+              reputation plus 0.01 times endorsement count. The solid line uses
+              the model's social-proof assumption. The dashed line is a comparison run where
+              every modeled endorsement arrives through discovery. These curves
+              show the chosen assumptions and parameters only.
             </p>
           </div>
         </div>
@@ -442,42 +456,47 @@
       <p class="legend mono" id="sim-prose-status" style="color:var(--ink-3)"></p>
     </section>
 
-    <!-- ============================================================ item 7 -->
+    <!-- ============================================================ section 7 -->
     <section id="s7">
-      <h2 class="with-no"><span class="item-no">Item 7</span><span>Receipts</span></h2>
+      <h2 class="with-no"><span class="item-no">Section 7</span><span>Receipts</span></h2>
       <table class="kv" id="receipts"></table>
 
-      <h3>What this leaves out</h3>
-      <p class="small">Form D covers US private placements under Rule 504,
-        Rule 506(b) and Rule 506(c) of Regulation D, and Section 4(a)(5). All of
-        those appear in the sample. What it misses is Regulation A, which files on
-        Form 1-A, Regulation CF, which files on Form C, any offering made entirely
-        outside the United States, and any offering where the notice was late or
-        never filed, which the SEC does enforce. It does not miss foreign issuers:
-        a Cayman or Luxembourg vehicle selling into the United States files a
-        Form D like anyone else, and <span class="mono" id="nonus"></span> non-US
-        issuers are in this sample, led by the Cayman Islands and Luxembourg.
-        Co-investment vehicles and SPVs file as issuers in their own right, which
-        is why two thirds of the corpus is funds filing under names that read like
-        product companies.</p>
-      <p class="small">Two things about the names. A person is counted once per
-        issuer, so an amendment that repeats a director has not put them on a
-        second company. Generational suffixes are stripped before matching, so
-        "Loeffler II" and "Loeffler" are the same person, which merges a father
-        and a son who share a name and therefore makes the repeater count larger,
-        not smaller. Telling a person from a legal entity is a judgement call, so
-        the rule is written out in the build script and applied identically by
-        the verification script. All of this makes the corpus noisier than
-        reality rather than cleaner, which means the sparse graph in Item 4 is a
-        ceiling and not a floor.</p>
-      <p class="small">Everything above is recomputed from the filings by a
-        second script that shares no code with the one that built this page, and
-        it fails loudly on any disagreement. The code is in the repository.</p>
+      <h3>Scope and limits</h3>
+      <p class="small">The SEC identifies Form D for exempt offerings under Rule
+        504 or 506 of Regulation D and Section 4(a)(5). Regulation A and Regulation
+        Crowdfunding use other forms. The sample also cannot show offerings made
+        entirely outside the United States or notices that are late or missing.
+        A late or missing Form D can violate the notice-filing rule; the SEC staff
+        says filing itself is not a condition to Rule 504 or 506 exemption
+        availability, while Rule 507 describes possible consequences. See the
+        <a class="src" href="https://www.sec.gov/resources-small-businesses/exempt-offerings/filing-form-d-notice"
+        target="_blank" rel="noopener">SEC filing guide</a> and its
+        <a class="src" href="https://www.sec.gov/rules-regulations/staff-guidance/corporation-finance-interpretations/securities-act-rules"
+        target="_blank" rel="noopener">interpretations</a>. Foreign issuers
+        also appear in the data: <span class="mono" id="nonus"></span> non-US
+        issuer CIKs are represented.</p>
+      <p class="small">The graph groups filings by CIK and keeps one name entry
+        per issuer, omitting shared-accession Item 3 names that cannot be assigned
+        to a specific issuer CIK. Names are normalized for case, diacritics, and punctuation.
+        For names matching the person-name heuristic, listed generational and
+        honorific suffixes are removed only at the end. Entity-classified names
+        keep every token, including Roman numerals. The method does not expand
+        initials or aliases, and same-name matches are not verified identities.
+        The current cache also omits the filed middle-name fields for related
+        people; none were reconstructed. The corrected parser preserves middle
+        names in future records, but this cache was not refreshed. Missing
+        middle names can merge distinct people, and name keys can also split one
+        person across variants; the net direction of name-count error is
+        unknown.</p>
+      <p class="small">The independent verifier recomputes data-derived counts
+        from the cached filings and checks them against the generated page data.
+        Model outputs are generated by the simulation. The code and raw cache
+        are in the repository.</p>
     </section>
 
     <footer class="mono">
       <span>Drops, a standalone edition</span>
-      <span>Data: SEC EDGAR Form D and Form D-A</span>
+      <span>Data: SEC EDGAR Form D and Form D/A</span>
       <span>Rendered client side, no trackers</span>
       <span id="foot-date"></span>
     </footer>
