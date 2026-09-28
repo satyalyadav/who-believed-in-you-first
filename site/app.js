@@ -566,6 +566,26 @@ function renderBlank() {
   const all = st.investors.all;
 
   bars($("#ninv-chart"), co.ninvBands, { h: 210, padL: 44 });
+  /* The band sentence is assembled from the histogram rather than written by
+     hand. An earlier hand-written version said the largest band was three to
+     five and that a quarter reported one or two backers; the largest band is
+     actually one backer, and the quarter was measured against all 484 operating
+     companies while the histogram is drawn over the 404 that report a count. */
+  const bands = co.ninvBands;
+  const at = label => (bands.find(b => b[0] === label) || ["", 0])[1];
+  const bandsTotal = bands.reduce((s, b) => s + b[1], 0);
+  const biggest = bands.reduce((a, b) => (b[1] > a[1] ? b : a), ["", -1]);
+  const low = at("1") + at("2");
+  const high = at("11-25") + at("26-100") + at("100+");
+  const pc = n => Math.round(100 * n / bandsTotal) + "%";
+  const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
+  set("#bk-report", `${fmt(co.reporting)} of the ${fmt(st.cos)}`);
+  set("#bk-zero", fmt(st.cos - co.reporting));
+  set("#bk-bands",
+    `The largest single band is ${biggest[0] === "1" ? "one backer" : biggest[0]}, ` +
+    `with ${fmt(biggest[1])} of the ${fmt(bandsTotal)}. ${pc(low)} report one or two. ` +
+    `${pc(high)} report eleven or more.`);
+
   $("#ninv-sub").textContent =
     `${fmt(co.reporting)} of ${fmt(co.n)} operating-company filings filled in the box`;
 
@@ -600,7 +620,7 @@ function renderReceipts() {
       1 July and 26 September 2026, read in full from the EDGAR daily
       dissemination index across ${fmt(st.popDays)} business days`],
     ["Sample", `${fmt(st.sample)} of them, drawn with seed ${st.seed}`],
-    ["Sample rate", `${st.sampleRate}% of the quarter`],
+    ["Sample rate", `${st.sampleRate}% of the window`],
     ["Distinct issuers", `${fmt(st.issuers)} distinct CIKs, after merging the
       ${fmt(st.multiFilingIssuers)} issuers that filed twice inside the window.
       ${fmt(st.amendments)} of the ${fmt(st.sample)} filings are amendments, and
@@ -627,7 +647,13 @@ function renderReceipts() {
       ${bytes(co.checkMedian)}, Gini ${co.checkGini}`],
     ["Rule 506(c)", `${fmt(st.rule506cCo)} of ${fmt(st.cos)} operating-company
       filings, ${fmt(st.rule506c)} of ${fmt(st.issuers)} in total`],
-    ["Retrieved", today],
+    ["EDGAR crawl", `${D.meta && D.meta.crawled}. The window closes on
+      26 September, so the last four days of the quarter are not in it`],
+    ["Cross-check", `EDGAR's own search API, asked for the same window, counts
+      15,080 filings against the 15,282 in the daily index, 1.3% lower. The daily
+      index is the dissemination record and is the one this page uses. Both counts
+      include amendments: a search for form type D returns D and D/A together`],
+    ["Sources fetched", `${today} for the cosign copy and the regulatory links`],
     ["Filing deadline", `Form D is due no later than 15 days after the first
       sale, not before it. See the form itself:
       <a class="src" href="https://www.sec.gov/Archives/edgar/vprr/0201/02014640.pdf"
@@ -997,13 +1023,15 @@ function wireTip() {
 function boot(DATA) {
   D = DATA;
   const st = D.stats;
+  const crawled = D.meta && D.meta.crawled ? D.meta.crawled : "";
   const today = new Date().toISOString().slice(0, 10);
-  $("#kicker-n").textContent = `${fmt(st.sample)} of ${fmt(st.popFilings)} filings in the quarter`;
+  $("#kicker-n").textContent = `${fmt(st.sample)} of ${fmt(st.popFilings)} filings across the window`;
   $("#by-f").textContent = fmt(st.sample);
-  $("#chrome-stat").textContent = `EDGAR Form D, ${fmt(st.popFilings)} filings in the quarter`;
+  $("#chrome-stat").textContent =
+    `EDGAR Form D, ${fmt(st.popFilings)} filings, 1 Jul to 26 Sep 2026`;
   $("#rail-n").textContent = `${fmt(st.sample)} filings · ${fmt(st.coNames.distinct)} people`;
-  $("#rail-date").textContent = today;
-  $("#foot-date").textContent = today;
+  $("#rail-date").textContent = crawled;
+  $("#foot-date").textContent = `EDGAR crawl ${crawled}, page rendered ${today}`;
 
   const form = D.forms.find(f => /manufacturer/i.test(f.label || "")) || D.forms[0];
   if (form) {
@@ -1038,6 +1066,10 @@ function boot(DATA) {
   if (nu) nu.textContent = fmt(st.nonUsTotal);
   const noamt = $("#noamount");
   if (noamt) noamt.textContent = fmt(st.fundsNoAmount);
+  for (const [id, v] of [["#co-tech", fmt(st.coTech)], ["#co-n", fmt(st.cos)],
+                         ["#co-other", fmt(st.coOther)]]) {
+    const e = $(id); if (e) e.textContent = v;
+  }
 
   $("#graphtext").innerHTML =
     `Pull the named people out of those filings and draw an edge from each person

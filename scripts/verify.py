@@ -193,6 +193,22 @@ def main():
             break
     check("of the top 9 repeats, named as agents or GPs", admin, 9)
 
+    print("\nwhat the non-fund issuers actually are")
+    VENT = {
+        "Other Technology", "Technology", "Computers", "Telecommunications",
+        "Biotechnology", "Pharmaceuticals", "Other Health Care", "Health Care",
+        "Business Services", "Manufacturing", "Other",
+    }
+    ind_of = {}
+    for r in rows:
+        if r["ind"]:
+            ind_of[r["cik"]] = r["ind"]
+    tech = sum(1 for e in cos if FUND not in e["inds"] and ind_of.get(
+        next((c for c in fold if fold[c] is e), ""), "") in VENT)
+    check("non-fund issuers that are tech, health, services or manufacturing",
+          tech, S["coTech"])
+    check("the rest of the non-fund issuers", len(cos) - tech, S["coOther"])
+
     print("\nbacker counts, operating companies")
     withn = [e for e in cos if e["ninv"] and e["ninv"] > 0]
     zero = [e for e in cos if e["ninv"] == 0]

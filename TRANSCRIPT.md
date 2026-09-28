@@ -472,7 +472,70 @@ The DOM audit now also checks the titles: that none wraps past two lines, that
 none has one word per line, that none overflows, and that all seven numbered
 headings still have their numbers.
 
-## 13. Design, in one pass
+## 13. A fifth audit, and the check that had been checking itself
+
+The audits kept finding things, so this one went looking for a class of error the
+earlier ones could not see: claims that are true today and will be false
+tomorrow, and comparisons whose baseline was wrong.
+
+**The retrieval date was moving.** The page printed `new Date()` as the date the
+data was retrieved. The crawl ran on 27 September and the page said 28 September
+the next day, and would have said 30 September a week later. A retrieval date that
+updates itself is not a retrieval date. The crawl date is now written into the
+payload at build time from the crawl file's own timestamp, and the render date is
+stated separately, because they are two different facts.
+
+**Three places called the window a quarter.** It is 1 July to 26 September. The
+chrome, the sample rate and the table caption now say so.
+
+**The external count was mine to get wrong, and I did.** Comparing my 15,282
+against EDGAR's search API looked like a 53% discrepancy, which would have
+invalidated the population and with it every percentage on the page. It was not a
+discrepancy. The API's `forms=D` matches both `D` and `D/A`, so adding the two
+queries double counted the amendments. Asked correctly, month by month:
+
+| month | search API | daily index | diff |
+| --- | --- | --- | --- |
+| July | 5,585 | 5,665 | +1.4% |
+| August | 4,700 | 4,771 | +1.5% |
+| September to the 26th | 4,795 | 4,846 | +1.1% |
+| total | 15,080 | 15,282 | +1.3% |
+
+The population holds, to within the 1.3% that separates a dissemination index
+from a search index. The receipts now carry the cross-check and the reason for
+the gap, and the reason the naive comparison was wrong.
+
+**Ground truth went from 12 filings to 72.** Sixty more were re-fetched from
+EDGAR and compared field by field, entity name, jurisdiction, industry, amount
+offered, amount sold, investor count, exemption codes, and every named person. Not
+one disagreement.
+
+**Four claims did not survive the copy review.**
+
+The largest single band of investor counts is one backer, with 83 of the 404. The
+page said it was three to five, and I had "verified" that in the previous round by
+reading numbers off a different computation than the one the page renders. The
+whole sentence is now generated from the histogram, so the words and the numbers
+cannot come apart again.
+
+The same sentence measured "a quarter report one or two backers" against all 484
+operating companies while the chart beside it is drawn over the 404 that report a
+count. Both now use the same denominator, and the shares are computed rather than
+written.
+
+"Not a tail of small friends-and-family cheques" was unsupportable: a fifth of
+these rounds report exactly one backer, which is one person writing the whole
+thing. The honest shape is bimodal, a fifth at one backer and two fifths at eleven
+or more with a thin middle, and that is what it now says.
+
+And item 3's heading, "Two thirds of it is not startups", was inviting the reader
+to assume the other third is startups. It is not: 257 of the 484 are technology,
+health care, business services or manufacturing, and the other 227 are property
+vehicles, banks, insurers, energy companies, restaurants and investment vehicles.
+The heading stands, because the two thirds is right, but the body now says what
+the remaining third actually is.
+
+## 14. Design, in one pass
 
 The subject is a regulatory form, so the page is a regulatory form. Cold paper
 rather than cream, one mono family for everything structural and a high-contrast
@@ -492,7 +555,7 @@ histogram of degrees says it in one bar.
 
 ---
 
-## 14. Verification
+## 15. Verification
 
 Layout was checked in a real browser rather than by eye. The preview tool's
 screenshot path was broken in this environment, so a local Chromium was
@@ -546,7 +609,7 @@ Rule 504 filings present: 8 (so Rule 504 is not an exclusion)
 
 ---
 
-## 15. What I would do next
+## 16. What I would do next
 
 The 484 operating-company filings are one quarter of one exemption. The same
 code against Reg A and Reg CF, and against the 13D/G and Form ADV records where

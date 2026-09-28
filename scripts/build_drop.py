@@ -5,6 +5,7 @@ Turn the raw Form D crawl into the one JSON file the drop reads.
 Everything the page shows is computed here so the numbers on screen can be
 reproduced by re-running this file. Run it after scripts/fetch_formd.py.
 """
+import datetime
 import json
 import os
 import re
@@ -418,6 +419,18 @@ def main():
         pop["peak"] = dc.most_common(1)[0]
 
     by_ind = Counter(i["g"] or "Unclassified" for i in out_issuers)
+    co_by_ind = Counter(i["g"] or "Unclassified" for i in cos)
+    # Which of the non-fund issuers are the kind of company a startup directory
+    # means, and which are operating businesses of another sort. The distinction
+    # matters because the page calls the non-fund slice "operating companies" and
+    # that is not the same thing as startups.
+    VENTURESOME = {
+        "Other Technology", "Technology", "Computers", "Telecommunications",
+        "Biotechnology", "Pharmaceuticals", "Other Health Care", "Health Care",
+        "Business Services", "Manufacturing", "Other",
+    }
+    co_tech = sum(v for k, v in co_by_ind.items() if k in VENTURESOME)
+    co_other = len(cos) - co_tech
     by_state = Counter(i["s"] or "--" for i in out_issuers)
     by_state_co = Counter(i["s"] or "--" for i in cos)
     by_month = Counter(i["f"][:6] for i in out_issuers)
@@ -438,6 +451,8 @@ def main():
 
     stats = {
         "window": f"{WINDOW[0]}-{WINDOW[1]}",
+        "crawled": datetime.date.fromtimestamp(
+            os.path.getmtime(SRC)).isoformat(),
         "seed": SAMPLE_SEED,
         "sample": len(recs),
         "popFilings": pop["filings"],
@@ -464,6 +479,10 @@ def main():
         "cosWithPeoplePct": pct(sum(1 for i in cos if i["P"]), len(cos)),
         "entityOnly": sum(1 for i in out_issuers if i["E"] and not i["P"]),
         "byInd": by_ind.most_common(),
+        "coByInd": co_by_ind.most_common(),
+        "coTech": co_tech,
+        "coOther": co_other,
+        "coTechPct": pct(co_tech, len(cos)),
         "byState": by_state_co.most_common(12),
         "byStateAll": by_state.most_common(12),
         "byMonth": [[k, v] for k, v in sorted(by_month.items())],
@@ -492,6 +511,7 @@ def main():
 
     payload = {
         "meta": {"window": stats["window"], "seed": SAMPLE_SEED,
+                 "crawled": stats["crawled"],
                  "source": "SEC EDGAR Form D and Form D-A, primary_doc.xml"},
         "stats": stats,
         "issuers": out_issuers,
