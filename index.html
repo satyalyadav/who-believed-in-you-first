@@ -17,7 +17,7 @@
   <span class="sp"></span>
   <span class="idx" id="chrome-idx">item 1 of 7</span>
   <span class="sp"></span>
-  <span class="idx" id="chrome-stat">EDGAR Form D, Q3 2026</span>
+  <span class="idx" id="chrome-stat">EDGAR Form D, July to September 2026</span>
 </div>
 
 <div class="wrap">
@@ -27,7 +27,7 @@
     <div class="meta">
       <div id="rail-n"></div>
       <div>SEC EDGAR, primary_doc.xml</div>
-      <div>retrieved <span id="rail-date"></span></div>
+      <div>crawled <span id="rail-date"></span></div>
     </div>
   </nav>
 
@@ -164,8 +164,16 @@
         round. In this sample <span class="mono" id="fund-n"></span> of
         <span class="mono" id="iss-n"></span> filings are pooled investment funds
         filing under names that read like product companies, and the rest are
-        operating companies. A directory of the startup ecosystem built on this
-        feed has to throw two thirds of it away first.</p>
+        operating companies.</p>
+      <p>Even that third is not what a startup directory means.
+        <span class="mono" id="co-tech"></span> of the
+        <span class="mono" id="co-n"></span> are technology, health care, business
+        services or manufacturing. The other
+        <span class="mono" id="co-other"></span> are property vehicles, banks,
+        insurers, energy companies, restaurants and investment vehicles. Real
+        businesses, most of them, and none of them what cosign is for. A directory
+        of the startup ecosystem built on this feed throws away two thirds of it
+        and then has to be careful about most of the rest.</p>
 
       <svg class="bars" id="split-chart" viewBox="0 0 420 54" role="img"
            aria-label="Share of the sample that is pooled investment funds"></svg>
@@ -195,7 +203,7 @@
       <div class="dirwrap">
         <div class="scroller">
           <table class="dir">
-            <caption class="sr">Form D filings from the third quarter of 2026</caption>
+            <caption class="sr">Form D filings filed between 1 July and 26 September 2026</caption>
             <thead><tr>
               <th data-sort="f" scope="col">filed</th>
               <th data-sort="n" scope="col">issuer</th>
@@ -301,16 +309,16 @@
     <section id="s5">
       <h2 class="with-no"><span class="item-no">Item 5</span><span>The one field that counts backers</span></h2>
       <p>Form D has a box, near the bottom, that asks for the total number of
-        investors who had already invested in the offering by the time the
-        filing was made. Not one operating company in the sample leaves it blank.
-        404 of the 484 report at least one backer and the other 80 report zero,
-        which on this form means the first sale had not happened yet. The shape
-        among the 404 is not the one you would guess. A quarter report one or two
-        backers, 83 of them exactly one, a third report eleven or more, and the
-        largest single band is three to five. This is not
-        a tail of small friends-and-family cheques. It is mostly small
-        institutional rounds with a handful of buyers each, which is the part of
-        the market nobody has ever felt the need for a directory.</p>
+        investors who had already invested in the offering by the time the filing
+        was made. Not one operating company in the sample leaves it blank.
+        <span class="mono" id="bk-report"></span> report at least one backer and
+        the other <span class="mono" id="bk-zero"></span> report zero, which on
+        this form means the first sale had not happened yet. Among the ones that
+        report, the shape is bimodal rather than a long tail.
+        <span class="mono" id="bk-bands"></span> One person writing the whole
+        thing, or a small syndicate, with very little in between. Both ends of
+        that are the part of the market nobody has ever needed a directory
+        for.</p>
       <p>So the number of people who believed in a startup is on the public
         record, and who they were is not. The form will tell you the shape of a
         cap table at the granularity of a count, and nothing else. Cosign is
